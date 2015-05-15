@@ -27,9 +27,9 @@ inputFilesAOD = cms.untracked.vstring(
 
 inputFilesMiniAOD = cms.untracked.vstring(
     # MiniAOD test files from a GJet PT40 dataset
-    '/store/mc/Phys14DR/GJet_Pt40_doubleEMEnriched_TuneZ2star_13TeV-pythia6/MINIAODSIM/PU20bx25_PHYS14_25_V1-v1/00000/101611CC-026E-E411-B8D7-00266CFFBF88.root',                 
-    '/store/mc/Phys14DR/GJet_Pt40_doubleEMEnriched_TuneZ2star_13TeV-pythia6/MINIAODSIM/PU20bx25_PHYS14_25_V1-v1/00000/1024D6DB-7D6F-E411-AE1D-00266CFF0608.root',                 
-    '/store/mc/Phys14DR/GJet_Pt40_doubleEMEnriched_TuneZ2star_13TeV-pythia6/MINIAODSIM/PU20bx25_PHYS14_25_V1-v1/00000/107B7861-7C6F-E411-974E-00266CFFC80C.root',                 
+    '/store/mc/Phys14DR/GJet_Pt40_doubleEMEnriched_TuneZ2star_13TeV-pythia6/MINIAODSIM/PU20bx25_PHYS14_25_V1-v1/00000/101611CC-026E-E411-B8D7-00266CFFBF88.root',
+    '/store/mc/Phys14DR/GJet_Pt40_doubleEMEnriched_TuneZ2star_13TeV-pythia6/MINIAODSIM/PU20bx25_PHYS14_25_V1-v1/00000/1024D6DB-7D6F-E411-AE1D-00266CFF0608.root',
+    '/store/mc/Phys14DR/GJet_Pt40_doubleEMEnriched_TuneZ2star_13TeV-pythia6/MINIAODSIM/PU20bx25_PHYS14_25_V1-v1/00000/107B7861-7C6F-E411-974E-00266CFFC80C.root',
     )
 
 # Set up input/output depending on the format
@@ -73,24 +73,24 @@ for idmod in my_id_modules:
 #
 
 process.ntupler = cms.EDAnalyzer('PhotonNtuplerVIDDemo',
-                                 # The module automatically detects AOD vs miniAOD, so we configure both                                                                       
-                                 #                                                                                                                                             
-                                 # Common to all formats objects                                                                                                               
+                                 # The module automatically detects AOD vs miniAOD, so we configure both
+                                 #
+                                 # Common to all formats objects
                                  #                                    
                                  # ... 
-                                 #                                                                                                                                             
-                                 # Objects specific to AOD format                                                                                                              
-                                 #                                                                                                                                             
+                                 #
+                                 # Objects specific to AOD format
+                                 #
                                  photons = cms.InputTag("gedPhotons"),
                                  genParticles = cms.InputTag("genParticles"),
-                                 #                                                                                                                                             
-                                 # Objects specific to MiniAOD format                                                                                                          
-                                 #                                                                                                                                             
+                                 #
+                                 # Objects specific to MiniAOD format
+                                 #
                                  photonsMiniAOD = cms.InputTag("slimmedPhotons"),
                                  genParticlesMiniAOD = cms.InputTag("prunedGenParticles"),
-                                 #                                                                                                                                             
-                                 # ID decisions (common to all formats)                                                                                                        
-                                 #                                                                                                                                             
+                                 #
+                                 # ID decisions (common to all formats)
+                                 #
                                  phoLooseIdMap = cms.InputTag("egmPhotonIDs:cutBasedPhotonID-PHYS14-PU20bx25-V2-standalone-loose"),
                                  phoMediumIdMap = cms.InputTag("egmPhotonIDs:cutBasedPhotonID-PHYS14-PU20bx25-V2-standalone-medium"),
                                  phoTightIdMap = cms.InputTag("egmPhotonIDs:cutBasedPhotonID-PHYS14-PU20bx25-V2-standalone-tight")
