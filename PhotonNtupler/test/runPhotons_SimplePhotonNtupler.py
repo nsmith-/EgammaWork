@@ -16,7 +16,7 @@ process.GlobalTag.globaltag = 'PHYS14_25_V1::All'
 #
 # Define input data to read
 #
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
 
 inputFilesAOD = cms.untracked.vstring(
     # AOD test files from a GJet PT40 dataset
@@ -35,7 +35,7 @@ inputFilesMiniAOD = cms.untracked.vstring(
 # Set up input/output depending on the format
 # You can list here either AOD or miniAOD files, but not both types mixed
 #
-useAOD = False
+useAOD = True
 
 if useAOD == True :
     inputFiles = inputFilesAOD
@@ -48,36 +48,26 @@ else :
 process.source = cms.Source ("PoolSource", fileNames = inputFiles ) 
 
 #
-# Set up photon ID (VID framework)
+# Several photon variables can not be found inside of a photon object
+# and it is easiest to compute them upstream with a dedicated producer,
+# such as this standard producer used for photon ID.
+#    The producer computes full5x5 cluster shapes and PF isolation variables.
 #
+# Do not forget to add this producer to the path below!
+#
+process.load("RecoEgamma/PhotonIdentification/PhotonIDValueMapProducer_cfi")
 
-from PhysicsTools.SelectorUtils.tools.vid_id_tools import *
-# turn on VID producer, indicate data format  to be
-# DataFormat.AOD or DataFormat.MiniAOD, as appropriate
-if useAOD == True :
-    dataFormat = DataFormat.AOD
-else :
-    dataFormat = DataFormat.MiniAOD
-
-switchOnVIDPhotonIdProducer(process, dataFormat)
-
-# define which IDs we want to produce
-my_id_modules = ['RecoEgamma.PhotonIdentification.Identification.cutBasedPhotonID_PHYS14_PU20bx25_V2_cff']
-
-#add them to the VID producer
-for idmod in my_id_modules:
-    setupAllVIDIdsInModule(process,idmod,setupVIDPhotonSelection)
 
 #
 # Configure an example module for user analysis of photons
 #
 
-process.ntupler = cms.EDAnalyzer('PhotonNtuplerVIDDemo',
+process.ntupler = cms.EDAnalyzer('SimplePhotonNtupler',
                                  # The module automatically detects AOD vs miniAOD, so we configure both
                                  #
                                  # Common to all formats objects
                                  #                                    
-                                 # ... 
+                                 rho = cms.InputTag("fixedGridRhoFastjetAll"),
                                  #
                                  # Objects specific to AOD format
                                  #
@@ -89,14 +79,26 @@ process.ntupler = cms.EDAnalyzer('PhotonNtuplerVIDDemo',
                                  photonsMiniAOD = cms.InputTag("slimmedPhotons"),
                                  genParticlesMiniAOD = cms.InputTag("prunedGenParticles"),
                                  #
-                                 # ID decisions (common to all formats)
+                                 # ValueMap names from the producer upstream
                                  #
-                                 phoLooseIdMap = cms.InputTag("egmPhotonIDs:cutBasedPhotonID-PHYS14-PU20bx25-V2-standalone-loose"),
-                                 phoMediumIdMap = cms.InputTag("egmPhotonIDs:cutBasedPhotonID-PHYS14-PU20bx25-V2-standalone-medium"),
-                                 phoTightIdMap = cms.InputTag("egmPhotonIDs:cutBasedPhotonID-PHYS14-PU20bx25-V2-standalone-tight")
+                                 full5x5SigmaIEtaIEtaMap   = cms.InputTag("photonIDValueMapProducer:phoFull5x5SigmaIEtaIEta"),
+                                 phoChargedIsolation = cms.InputTag("photonIDValueMapProducer:phoChargedIsolation"),
+                                 phoNeutralHadronIsolation = cms.InputTag("photonIDValueMapProducer:phoNeutralHadronIsolation"),
+                                 phoPhotonIsolation = cms.InputTag("photonIDValueMapProducer:phoPhotonIsolation"),
+                                 # 
+                                 # Locations of files with the effective area constants.
+                                 # The constants in these files below are derived for PHYS14 MC.
+                                 #
+                                 effAreaChHadFile = cms.FileInPath
+                                 ("RecoEgamma/PhotonIdentification/data/PHYS14/effAreaPhotons_cone03_pfChargedHadrons_V2.txt"),
+                                 effAreaNeuHadFile= cms.FileInPath
+                                 ("RecoEgamma/PhotonIdentification/data/PHYS14/effAreaPhotons_cone03_pfNeutralHadrons_V2.txt"),
+                                 effAreaPhoFile   = cms.FileInPath
+                                 ("RecoEgamma/PhotonIdentification/data/PHYS14/effAreaPhotons_cone03_pfPhotons_V2.txt")
                                 )
 
 process.TFileService = cms.Service("TFileService",
                                    fileName = cms.string( outputFile )
                                    )
-process.p = cms.Path(process.egmPhotonIDSequence * process.ntupler)
+
+process.p = cms.Path(process.photonIDValueMapProducer * process.ntupler)
