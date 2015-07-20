@@ -1,9 +1,9 @@
 // -*- C++ -*-
 //
 // Package:    EgammaWork/ElectronNtupler
-// Class:      ElectronNtuplerVIDDemo
+// Class:      ElectronNtuplerVIDwithMVADemo
 // 
-/**\class ElectronNtuplerVIDDemo ElectronNtuplerVIDDemo.cc EgammaWork/ElectronNtupler/plugins/ElectronNtuplerVIDDemo.cc
+/**\class ElectronNtuplerVIDwithMVADemo ElectronNtuplerVIDwithMVADemo.cc EgammaWork/ElectronNtupler/plugins/ElectronNtuplerVIDwithMVADemo.cc
 
  Description: [one line class summary]
 
@@ -55,10 +55,10 @@
 // class declaration
 //
 
-class ElectronNtuplerVIDDemo : public edm::EDAnalyzer {
+class ElectronNtuplerVIDwithMVADemo : public edm::EDAnalyzer {
    public:
-      explicit ElectronNtuplerVIDDemo(const edm::ParameterSet&);
-      ~ElectronNtuplerVIDDemo();
+      explicit ElectronNtuplerVIDwithMVADemo(const edm::ParameterSet&);
+      ~ElectronNtuplerVIDwithMVADemo();
 
       static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
@@ -86,28 +86,30 @@ class ElectronNtuplerVIDDemo : public edm::EDAnalyzer {
       // ----------member data ---------------------------
 
       // Data members that are the same for AOD and miniAOD
-      edm::EDGetTokenT<reco::BeamSpot> beamSpotToken_;
+      // ... none ...
 
       // AOD case data members
       edm::EDGetToken electronsToken_;
       edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticlesToken_;
-      edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
-      edm::EDGetTokenT<reco::ConversionCollection> conversionsToken_;
 
       // MiniAOD case data members
       edm::EDGetToken electronsMiniAODToken_;
       edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticlesMiniAODToken_;
-      edm::EDGetTokenT<reco::VertexCollection> vtxMiniAODToken_;
-      edm::EDGetTokenT<reco::ConversionCollection> conversionsMiniAODToken_;
 
       // ID decisions objects
-      edm::EDGetTokenT<edm::ValueMap<bool> > eleVetoIdMapToken_;
-      edm::EDGetTokenT<edm::ValueMap<bool> > eleLooseIdMapToken_;
       edm::EDGetTokenT<edm::ValueMap<bool> > eleMediumIdMapToken_;
       edm::EDGetTokenT<edm::ValueMap<bool> > eleTightIdMapToken_;
-      edm::EDGetTokenT<edm::ValueMap<bool> > eleHEEPIdMapToken_;
+
+      // MVA values and categories (optional)
+      edm::EDGetTokenT<edm::ValueMap<float> > mvaValuesMapToken_;
+      edm::EDGetTokenT<edm::ValueMap<int> > mvaCategoriesMapToken_;
 
   TTree *electronTree_;
+
+  // Global info
+  Int_t run_;
+  Int_t lumi_;
+  Int_t evtnum_;
 
   // all variables for the output tree
   Int_t nElectrons_;
@@ -116,14 +118,11 @@ class ElectronNtuplerVIDDemo : public edm::EDAnalyzer {
   std::vector<Float_t> eta_;
   std::vector<Float_t> phi_;
 
-  std::vector<Float_t> dz_;
-  std::vector<Int_t> passConversionVeto_;
+  std::vector<Float_t> mvaValue_;
+  std::vector<Int_t>   mvaCategory_;
 
-  std::vector<Int_t> passVetoId_;
-  std::vector<Int_t> passLooseId_;
   std::vector<Int_t> passMediumId_;
   std::vector<Int_t> passTightId_;
-  std::vector<Int_t> passHEEPId_;
 
   std::vector<Int_t> isTrue_;
 
@@ -140,21 +139,17 @@ class ElectronNtuplerVIDDemo : public edm::EDAnalyzer {
 //
 // constructors and destructor
 //
-ElectronNtuplerVIDDemo::ElectronNtuplerVIDDemo(const edm::ParameterSet& iConfig):
-  eleVetoIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleVetoIdMap"))),
-  eleLooseIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleLooseIdMap"))),
+ElectronNtuplerVIDwithMVADemo::ElectronNtuplerVIDwithMVADemo(const edm::ParameterSet& iConfig):
   eleMediumIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleMediumIdMap"))),
   eleTightIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleTightIdMap"))),
-  eleHEEPIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleHEEPIdMap")))
+  mvaValuesMapToken_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("mvaValuesMap"))),
+  mvaCategoriesMapToken_(consumes<edm::ValueMap<int> >(iConfig.getParameter<edm::InputTag>("mvaCategoriesMap")))
 {
 
   //
   // Prepare tokens for all input collections and objects
   //
 
-  beamSpotToken_    = consumes<reco::BeamSpot> 
-    (iConfig.getParameter <edm::InputTag>
-     ("beamSpot"));
 
   // AOD tokens
   electronsToken_    = mayConsume<edm::View<reco::GsfElectron> >
@@ -164,14 +159,6 @@ ElectronNtuplerVIDDemo::ElectronNtuplerVIDDemo(const edm::ParameterSet& iConfig)
   genParticlesToken_ = mayConsume<edm::View<reco::GenParticle> >
     (iConfig.getParameter<edm::InputTag>
      ("genParticles"));
-
-  vtxToken_          = mayConsume<reco::VertexCollection>
-    (iConfig.getParameter<edm::InputTag>
-     ("vertices"));
-
-  conversionsToken_ = mayConsume< reco::ConversionCollection >
-    (iConfig.getParameter<edm::InputTag>
-     ("conversions"));
 
   // MiniAOD tokens
   // For electrons, use the fact that pat::Electron can be cast into 
@@ -184,37 +171,31 @@ ElectronNtuplerVIDDemo::ElectronNtuplerVIDDemo(const edm::ParameterSet& iConfig)
     (iConfig.getParameter<edm::InputTag>
      ("genParticlesMiniAOD"));
 
-  vtxMiniAODToken_          = mayConsume<reco::VertexCollection>
-    (iConfig.getParameter<edm::InputTag>
-     ("verticesMiniAOD"));
-
-  conversionsMiniAODToken_ = mayConsume< reco::ConversionCollection >
-    (iConfig.getParameter<edm::InputTag>
-     ("conversionsMiniAOD"));
 
   edm::Service<TFileService> fs;
   electronTree_ = fs->make<TTree> ("ElectronTree", "Electron data");
   
+  electronTree_->Branch("run"        ,  &run_     , "run/I");
+  electronTree_->Branch("lumi"       ,  &lumi_    , "lumi/I");
+  electronTree_->Branch("evtnum"     ,  &evtnum_  , "evtnum/I");
+
   electronTree_->Branch("nEle",  &nElectrons_ , "nEle/I");
   electronTree_->Branch("pt"  ,  &pt_    );
   electronTree_->Branch("eta" ,  &eta_ );
   electronTree_->Branch("phi" ,  &phi_ );
 
-  electronTree_->Branch("dz" ,  &dz_ );
-  electronTree_->Branch("passConversionVeto" ,  &passConversionVeto_ );
+  electronTree_->Branch("mvaVal" ,  &mvaValue_ );
+  electronTree_->Branch("mvaCat" ,  &mvaCategory_ );
   
-  electronTree_->Branch("passVetoId"  ,  &passVetoId_ );
-  electronTree_->Branch("passLooseId"  ,  &passLooseId_ );
   electronTree_->Branch("passMediumId" ,  &passMediumId_ );
   electronTree_->Branch("passTightId"  ,  &passTightId_ );
-  electronTree_->Branch("passHEEPId"  ,  &passHEEPId_ );
 
   electronTree_->Branch("isTrue"             , &isTrue_);
 
 }
 
 
-ElectronNtuplerVIDDemo::~ElectronNtuplerVIDDemo()
+ElectronNtuplerVIDwithMVADemo::~ElectronNtuplerVIDwithMVADemo()
 {
  
    // do anything here that needs to be done at desctruction time
@@ -229,16 +210,17 @@ ElectronNtuplerVIDDemo::~ElectronNtuplerVIDDemo()
 
 // ------------ method called for each event  ------------
 void
-ElectronNtuplerVIDDemo::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+ElectronNtuplerVIDwithMVADemo::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   using namespace std;
   using namespace edm;
   using namespace reco;
 
-  // Get the beam spot
-  edm::Handle<reco::BeamSpot> theBeamSpot;
-  iEvent.getByToken(beamSpotToken_,theBeamSpot);  
-  
+  // Save global info right away
+  run_ = iEvent.id().run();
+  lumi_ = iEvent.id().luminosityBlock();
+  evtnum_ = iEvent.id().event();
+
   // Retrieve the collection of electrons from the event.
   // If we fail to retrieve the collection with the standard AOD
   // name, we next look for the one with the stndard miniAOD name.
@@ -259,58 +241,19 @@ ElectronNtuplerVIDDemo::analyze(const edm::Event& iEvent, const edm::EventSetup&
   else
     iEvent.getByToken(genParticlesMiniAODToken_,genParticles);
 
-  // Get PV
-  edm::Handle<reco::VertexCollection> vertices;
-  if( isAOD )
-    iEvent.getByToken(vtxToken_, vertices);
-  else
-    iEvent.getByToken(vtxMiniAODToken_, vertices);
-  
-  if (vertices->empty()) return; // skip the event if no PV found
-  
-  // Find the first vertex in the collection that passes
-  // good quality criteria
-  VertexCollection::const_iterator firstGoodVertex = vertices->end();
-  int firstGoodVertexIdx = 0;
-  for (VertexCollection::const_iterator vtx = vertices->begin(); 
-       vtx != vertices->end(); ++vtx, ++firstGoodVertexIdx) {
-    // Replace isFake() for miniAOD because it requires tracks and miniAOD vertices don't have tracks:
-    // Vertex.h: bool isFake() const {return (chi2_==0 && ndof_==0 && tracks_.empty());}
-    bool isFake = vtx->isFake();
-    if( !isAOD )
-      isFake = (vtx->chi2()==0 && vtx->ndof()==0);
-    // Check the goodness
-    if ( !isFake
-	 &&  vtx->ndof()>=4. && vtx->position().Rho()<=2.0
-	 && fabs(vtx->position().Z())<=24.0) {
-      firstGoodVertex = vtx;
-      break;
-    }
-  }
-
-  if ( firstGoodVertex==vertices->end() )
-    return; // skip event if there are no good PVs
-
-  // Get the conversions collection
-  edm::Handle<reco::ConversionCollection> conversions;
-  if(isAOD)
-    iEvent.getByToken(conversionsToken_, conversions);
-  else
-    iEvent.getByToken(conversionsMiniAODToken_, conversions);
-
   // Get the electron ID data from the event stream.
   // Note: this implies that the VID ID modules have been run upstream.
   // If you need more info, check with the EGM group.
-  edm::Handle<edm::ValueMap<bool> > veto_id_decisions;
-  edm::Handle<edm::ValueMap<bool> > loose_id_decisions;
   edm::Handle<edm::ValueMap<bool> > medium_id_decisions;
   edm::Handle<edm::ValueMap<bool> > tight_id_decisions; 
-  edm::Handle<edm::ValueMap<bool> > heep_id_decisions;
-  iEvent.getByToken(eleVetoIdMapToken_ ,veto_id_decisions);
-  iEvent.getByToken(eleLooseIdMapToken_ ,loose_id_decisions);
   iEvent.getByToken(eleMediumIdMapToken_,medium_id_decisions);
   iEvent.getByToken(eleTightIdMapToken_,tight_id_decisions);
-  iEvent.getByToken(eleHEEPIdMapToken_ ,heep_id_decisions);
+
+  // Get MVA values and categories (optional)
+  edm::Handle<edm::ValueMap<float> > mvaValues;
+  edm::Handle<edm::ValueMap<int> > mvaCategories;
+  iEvent.getByToken(mvaValuesMapToken_,mvaValues);
+  iEvent.getByToken(mvaCategoriesMapToken_,mvaCategories);
 
   // Clear vectors
   nElectrons_ = 0;
@@ -318,14 +261,10 @@ ElectronNtuplerVIDDemo::analyze(const edm::Event& iEvent, const edm::EventSetup&
   eta_.clear();
   phi_.clear();
   //
-  dz_.clear();
-  passConversionVeto_.clear();     
-  //
-  passVetoId_ .clear();
-  passLooseId_ .clear();
+  mvaValue_.clear();
+  mvaCategory_.clear();
   passMediumId_.clear();
   passTightId_ .clear();
-  passHEEPId_ .clear();
   //
   isTrue_.clear();
 
@@ -334,7 +273,7 @@ ElectronNtuplerVIDDemo::analyze(const edm::Event& iEvent, const edm::EventSetup&
     const auto el = electrons->ptrAt(i);
 
     // Kinematics
-    if( el->pt() < 10 ) // keep only electrons above 10 GeV
+    if( el->pt() < 5 ) // keep only electrons above 5 GeV
       continue;
     
     nElectrons_++;
@@ -346,29 +285,16 @@ ElectronNtuplerVIDDemo::analyze(const edm::Event& iEvent, const edm::EventSetup&
     eta_ .push_back( el->superCluster()->eta() );
     phi_ .push_back( el->superCluster()->phi() );
 
-    // Impact parameter
-    reco::GsfTrackRef theTrack = el->gsfTrack();
-    dz_.push_back( theTrack->dz( firstGoodVertex->position() ) );
-    
-    // Conversion rejection
-    bool passConvVeto = !ConversionTools::hasMatchedConversion(*el, 
-							       conversions,
-							       theBeamSpot->position());
-    passConversionVeto_.push_back( (int) passConvVeto );
-
     //
     // Look up and save the ID decisions
     // 
-    bool isPassVeto  = (*veto_id_decisions)[el];
-    bool isPassLoose  = (*loose_id_decisions)[el];
     bool isPassMedium = (*medium_id_decisions)[el];
     bool isPassTight  = (*tight_id_decisions)[el];
-    bool isPassHEEP = (*heep_id_decisions)[el];
-    passVetoId_.push_back  ( (int)isPassVeto  );
-    passLooseId_.push_back ( (int)isPassLoose );
     passMediumId_.push_back( (int)isPassMedium);
     passTightId_.push_back ( (int)isPassTight );
-    passHEEPId_.push_back ( (int)isPassHEEP );
+
+    mvaValue_.push_back( (*mvaValues)[el] );
+    mvaCategory_.push_back( (*mvaCategories)[el] );
 
     // Save MC truth match
     isTrue_.push_back( matchToTruth( el, genParticles) );
@@ -383,20 +309,20 @@ ElectronNtuplerVIDDemo::analyze(const edm::Event& iEvent, const edm::EventSetup&
 
 // ------------ method called once each job just before starting event loop  ------------
 void 
-ElectronNtuplerVIDDemo::beginJob()
+ElectronNtuplerVIDwithMVADemo::beginJob()
 {
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
 void 
-ElectronNtuplerVIDDemo::endJob() 
+ElectronNtuplerVIDwithMVADemo::endJob() 
 {
 }
 
 // ------------ method called when starting to processes a run  ------------
 /*
 void 
-ElectronNtuplerVIDDemo::beginRun(edm::Run const&, edm::EventSetup const&)
+ElectronNtuplerVIDwithMVADemo::beginRun(edm::Run const&, edm::EventSetup const&)
 {
 }
 */
@@ -404,7 +330,7 @@ ElectronNtuplerVIDDemo::beginRun(edm::Run const&, edm::EventSetup const&)
 // ------------ method called when ending the processing of a run  ------------
 /*
 void 
-ElectronNtuplerVIDDemo::endRun(edm::Run const&, edm::EventSetup const&)
+ElectronNtuplerVIDwithMVADemo::endRun(edm::Run const&, edm::EventSetup const&)
 {
 }
 */
@@ -412,7 +338,7 @@ ElectronNtuplerVIDDemo::endRun(edm::Run const&, edm::EventSetup const&)
 // ------------ method called when starting to processes a luminosity block  ------------
 /*
 void 
-ElectronNtuplerVIDDemo::beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&)
+ElectronNtuplerVIDwithMVADemo::beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&)
 {
 }
 */
@@ -420,14 +346,14 @@ ElectronNtuplerVIDDemo::beginLuminosityBlock(edm::LuminosityBlock const&, edm::E
 // ------------ method called when ending the processing of a luminosity block  ------------
 /*
 void 
-ElectronNtuplerVIDDemo::endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&)
+ElectronNtuplerVIDwithMVADemo::endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&)
 {
 }
 */
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
 void
-ElectronNtuplerVIDDemo::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+ElectronNtuplerVIDwithMVADemo::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   //The following says we do not know what parameters are allowed so do no validation
   // Please change this to state exactly what you do use, even if it is no parameters
   edm::ParameterSetDescription desc;
@@ -435,7 +361,7 @@ ElectronNtuplerVIDDemo::fillDescriptions(edm::ConfigurationDescriptions& descrip
   descriptions.addDefault(desc);
 }
 
-int ElectronNtuplerVIDDemo::matchToTruth(const edm::Ptr<reco::GsfElectron> el, 
+int ElectronNtuplerVIDwithMVADemo::matchToTruth(const edm::Ptr<reco::GsfElectron> el, 
 				  const edm::Handle<edm::View<reco::GenParticle>> &prunedGenParticles){
 
   // 
@@ -485,7 +411,7 @@ int ElectronNtuplerVIDDemo::matchToTruth(const edm::Ptr<reco::GsfElectron> el,
   return TRUE_PROMPT_ELECTRON;
 }
 
-void ElectronNtuplerVIDDemo::findFirstNonElectronMother(const reco::Candidate *particle,
+void ElectronNtuplerVIDwithMVADemo::findFirstNonElectronMother(const reco::Candidate *particle,
 						 int &ancestorPID, int &ancestorStatus){
 
   if( particle == 0 ){
@@ -506,4 +432,4 @@ void ElectronNtuplerVIDDemo::findFirstNonElectronMother(const reco::Candidate *p
 }
 
 //define this as a plug-in
-DEFINE_FWK_MODULE(ElectronNtuplerVIDDemo);
+DEFINE_FWK_MODULE(ElectronNtuplerVIDwithMVADemo);
