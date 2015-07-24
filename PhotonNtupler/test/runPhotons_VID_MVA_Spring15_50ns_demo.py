@@ -4,19 +4,21 @@ process = cms.Process("TestPhotons")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 
-process.load("Configuration.StandardSequences.Geometry_cff")
+#process.load("Configuration.StandardSequences.Geometry_cff")
+process.load("Configuration.StandardSequences.GeometryRecoDB_cff")
 
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 # NOTE: the pick the right global tag!
 #    for PHYS14 scenario PU4bx50 : global tag is ???
 #    for PHYS14 scenario PU20bx25: global tag is PHYS14_25_V1
 #  as a rule, find the global tag in the DAS under the Configs for given dataset
-process.GlobalTag.globaltag = 'PHYS14_25_V1::All'
+#process.GlobalTag.globaltag = 'PHYS14_25_V1::All'
+process.GlobalTag.globaltag = 'MCRUN2_74_V9A::All'
 
 #
 # Define input data to read
 #
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 inputFilesAOD = cms.untracked.vstring(
     # AOD test files from 
@@ -37,7 +39,7 @@ inputFilesMiniAOD = cms.untracked.vstring(
 # Set up input/output depending on the format
 # You can list here either AOD or miniAOD files, but not both types mixed
 #
-useAOD = True
+useAOD = False
 
 if useAOD == True :
     inputFiles = inputFilesAOD
@@ -65,7 +67,7 @@ switchOnVIDPhotonIdProducer(process, dataFormat)
 
 # define which IDs we want to produce
 my_id_modules = ['RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_PHYS14_PU20bx25_nonTrig_V1_cff',
-                 'RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Spring15_50ns_nonTrig_V0_cff']
+                 'RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Spring15_50ns_nonTrig_V1_cff']
 
 #add them to the VID producer
 for idmod in my_id_modules:
@@ -93,13 +95,14 @@ process.ntupler = cms.EDAnalyzer('PhotonNtuplerVIDwithMVADemo',
                                  genParticlesMiniAOD = cms.InputTag("prunedGenParticles"),
                                  #
                                  # ID decisions (common to all formats)
-                                 #
-                                 phoMediumIdMap = cms.InputTag("egmPhotonIDs:mvaPhoID-Spring15-50ns-nonTrig-V0-wp90"),
+                                 # (the names of the ValueMaps for just decision and full info are the same)
+                                 phoMediumIdBoolMap = cms.InputTag("egmPhotonIDs:mvaPhoID-Spring15-50ns-nonTrig-V1-wp90"),
+                                 phoMediumIdFullInfoMap = cms.InputTag("egmPhotonIDs:mvaPhoID-Spring15-50ns-nonTrig-V1-wp90"),
                                  #
                                  # ValueMaps with MVA results
                                  #
-                                 mvaValuesMap     = cms.InputTag("photonMVAValueMapProducer:PhotonMVAEstimatorRun2Spring15NonTrigValues"),
-                                 mvaCategoriesMap = cms.InputTag("photonMVAValueMapProducer:PhotonMVAEstimatorRun2Spring15NonTrigCategories")
+                                 mvaValuesMap     = cms.InputTag("photonMVAValueMapProducer:PhotonMVAEstimatorRun2Spring15NonTrig50nsV1Values"),
+                                 mvaCategoriesMap = cms.InputTag("photonMVAValueMapProducer:PhotonMVAEstimatorRun2Spring15NonTrig50nsV1Categories")
                                 )
 
 process.TFileService = cms.Service("TFileService",

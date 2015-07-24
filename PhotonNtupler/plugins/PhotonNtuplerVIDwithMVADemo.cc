@@ -38,6 +38,8 @@
 
 #include "DataFormats/Common/interface/ValueMap.h"
 
+#include "DataFormats/PatCandidates/interface/VIDCutFlowResult.h"
+
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 
@@ -98,7 +100,8 @@ class PhotonNtuplerVIDwithMVADemo : public edm::EDAnalyzer {
       edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticlesMiniAODToken_;
 
       // ID decisions objects
-      edm::EDGetTokenT<edm::ValueMap<bool> > phoMediumIdMapToken_;
+      edm::EDGetTokenT<edm::ValueMap<bool> >               phoMediumIdBoolMapToken_;
+      edm::EDGetTokenT<edm::ValueMap<vid::CutFlowResult> > phoMediumIdFullInfoMapToken_;
 
       // MVA values and categories (optional)
       edm::EDGetTokenT<edm::ValueMap<float> > mvaValuesMapToken_;
@@ -139,7 +142,10 @@ class PhotonNtuplerVIDwithMVADemo : public edm::EDAnalyzer {
 // constructors and destructor
 //
 PhotonNtuplerVIDwithMVADemo::PhotonNtuplerVIDwithMVADemo(const edm::ParameterSet& iConfig):
-  phoMediumIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("phoMediumIdMap"))),
+  phoMediumIdBoolMapToken_(consumes<edm::ValueMap<bool> >
+			   (iConfig.getParameter<edm::InputTag>("phoMediumIdBoolMap"))),
+  phoMediumIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >
+			       (iConfig.getParameter<edm::InputTag>("phoMediumIdFullInfoMap"))),
   mvaValuesMapToken_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("mvaValuesMap"))),
   mvaCategoriesMapToken_(consumes<edm::ValueMap<int> >(iConfig.getParameter<edm::InputTag>("mvaCategoriesMap")))
 {
@@ -241,8 +247,14 @@ PhotonNtuplerVIDwithMVADemo::analyze(const edm::Event& iEvent, const edm::EventS
   // Get the photon ID data from the event stream.
   // Note: this implies that the VID ID modules have been run upstream.
   // If you need more info, check with the EGM group.
+  //
+  // The first map simply has pass/fail for each particle
   edm::Handle<edm::ValueMap<bool> > medium_id_decisions;
-  iEvent.getByToken(phoMediumIdMapToken_,medium_id_decisions);
+  iEvent.getByToken(phoMediumIdBoolMapToken_,medium_id_decisions);
+  //
+  // The second map has the full info about the cut flow
+  edm::Handle<edm::ValueMap<vid::CutFlowResult> > medium_id_cutflow_data;
+  iEvent.getByToken(phoMediumIdFullInfoMapToken_,medium_id_cutflow_data);
 
   // Get MVA values and categories (optional)
   edm::Handle<edm::ValueMap<float> > mvaValues;
@@ -284,6 +296,19 @@ PhotonNtuplerVIDwithMVADemo::analyze(const edm::Event& iEvent, const edm::EventS
     // 
     bool isPassMedium = (*medium_id_decisions)[pho];
     passMediumId_.push_back( (int)isPassMedium);
+
+    vid::CutFlowResult fullCutFlowData = (*medium_id_cutflow_data)[pho];
+    printf("\nDEBUG: name= %s\n", fullCutFlowData.cutFlowName().c_str());
+    printf("       standard decision= %d   cutflow decision=%d\n",
+	   (int) isPassMedium, (int) fullCutFlowData.cutFlowPassed());
+    int ncuts = fullCutFlowData.cutFlowSize();
+    for(int icut = 0; icut<ncuts; icut++){
+      printf("  %d     name=%s   masked=%d  value=%f    pass=%d\n", icut,
+	     fullCutFlowData.getNameAtIndex(icut).c_str(),
+	     (int)fullCutFlowData.isCutMasked(icut),
+	     fullCutFlowData.getValueCutUpon(icut),
+	     (int)fullCutFlowData.getCutResultByIndex(icut));
+    }
 
     mvaValue_.push_back( (*mvaValues)[pho] );
     mvaCategory_.push_back( (*mvaCategories)[pho] );
