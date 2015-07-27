@@ -39,6 +39,8 @@
 
 #include "DataFormats/Common/interface/ValueMap.h"
 
+#include "DataFormats/PatCandidates/interface/VIDCutFlowResult.h"
+
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 
@@ -53,54 +55,61 @@
 //
 
 class PhotonNtuplerVIDDemo : public edm::EDAnalyzer {
-   public:
-      explicit PhotonNtuplerVIDDemo(const edm::ParameterSet&);
-      ~PhotonNtuplerVIDDemo();
-
-      static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
-
-      enum PhotonMatchType {UNMATCHED = 0, 
-			    MATCHED_FROM_GUDSCB,
-			    MATCHED_FROM_PI0,
-			    MATCHED_FROM_OTHER_SOURCES};
+public:
+  explicit PhotonNtuplerVIDDemo(const edm::ParameterSet&);
+  ~PhotonNtuplerVIDDemo();
   
-   private:
-      virtual void beginJob() override;
-      virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
-      virtual void endJob() override;
+  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+  
+  enum PhotonMatchType {UNMATCHED = 0, 
+			MATCHED_FROM_GUDSCB,
+			MATCHED_FROM_PI0,
+			MATCHED_FROM_OTHER_SOURCES};
+  
+private:
+  virtual void beginJob() override;
+  virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
+  virtual void endJob() override;
+  
+  //virtual void beginRun(edm::Run const&, edm::EventSetup const&) override;
+  //virtual void endRun(edm::Run const&, edm::EventSetup const&) override;
+  //virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
+  //virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
+  
+  int matchToTruth(const reco::Photon &pho, 
+		   const edm::Handle<edm::View<reco::GenParticle>>  &genParticles);
+  
+  void findFirstNonPhotonMother(const reco::Candidate *particle,
+				int &ancestorPID, int &ancestorStatus);
+  
+  void printCutFlowResult(vid::CutFlowResult &cutflow);
 
-      //virtual void beginRun(edm::Run const&, edm::EventSetup const&) override;
-      //virtual void endRun(edm::Run const&, edm::EventSetup const&) override;
-      //virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
-      //virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
+  // ----------member data ---------------------------
+  
+  // AOD case data members
+  edm::EDGetToken photonsToken_;
+  edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticlesToken_;
 
-      int matchToTruth(const reco::Photon &pho, 
-		       const edm::Handle<edm::View<reco::GenParticle>>  &genParticles);
+  // MiniAOD case data members
+  edm::EDGetToken photonsMiniAODToken_;
+  edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticlesMiniAODToken_;
+  
+  
+  // ID decision objects
+  edm::EDGetTokenT<edm::ValueMap<bool> > phoLooseIdMapToken_;
+  edm::EDGetTokenT<edm::ValueMap<bool> > phoMediumIdMapToken_;
+  edm::EDGetTokenT<edm::ValueMap<bool> > phoTightIdMapToken_;
+  // One example of full information about the cut flow
+  edm::EDGetTokenT<edm::ValueMap<vid::CutFlowResult> > phoMediumIdFullInfoMapToken_;
 
-      void findFirstNonPhotonMother(const reco::Candidate *particle,
-				    int &ancestorPID, int &ancestorStatus);
-
-      // ----------member data ---------------------------
-
-      // AOD case data members                                                                                                                                                 
-      edm::EDGetToken photonsToken_;
-      edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticlesToken_;
-
-      // MiniAOD case data members                                                                                                                                                 
-      edm::EDGetToken photonsMiniAODToken_;
-      edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticlesMiniAODToken_;
-
-
-      // ID decision objects
-      edm::EDGetTokenT<edm::ValueMap<bool> > phoLooseIdMapToken_;
-      edm::EDGetTokenT<edm::ValueMap<bool> > phoMediumIdMapToken_;
-      edm::EDGetTokenT<edm::ValueMap<bool> > phoTightIdMapToken_;
+  // Verbose output for ID
+  bool verboseIdFlag_;
 
   TTree *photonTree_;
-
+  
   // all photon variables
   Int_t nPhotons_;
-
+  
   std::vector<Float_t> pt_;
   std::vector<Float_t> eta_;
   std::vector<Float_t> phi_;
@@ -127,7 +136,10 @@ class PhotonNtuplerVIDDemo : public edm::EDAnalyzer {
 PhotonNtuplerVIDDemo::PhotonNtuplerVIDDemo(const edm::ParameterSet& iConfig):
   phoLooseIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("phoLooseIdMap"))),
   phoMediumIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("phoMediumIdMap"))),
-  phoTightIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("phoTightIdMap")))
+  phoTightIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("phoTightIdMap"))),
+  phoMediumIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >
+			       (iConfig.getParameter<edm::InputTag>("phoMediumIdFullInfoMap"))),
+  verboseIdFlag_(iConfig.getParameter<bool>("phoIdVerbose"))
 {
 
   //                                                                                                                                                                           
@@ -220,6 +232,9 @@ PhotonNtuplerVIDDemo::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   iEvent.getByToken(phoLooseIdMapToken_ ,loose_id_decisions);
   iEvent.getByToken(phoMediumIdMapToken_,medium_id_decisions);
   iEvent.getByToken(phoTightIdMapToken_ ,tight_id_decisions);
+  // Full cut flow info for one of the working points:
+  edm::Handle<edm::ValueMap<vid::CutFlowResult> > medium_id_cutflow_data;
+  iEvent.getByToken(phoMediumIdFullInfoMapToken_,medium_id_cutflow_data);
 
   // Clear vectors
   nPhotons_ = 0;
@@ -259,6 +274,27 @@ PhotonNtuplerVIDDemo::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     passLooseId_.push_back ( (int)isPassLoose );
     passMediumId_.push_back( (int)isPassMedium);
     passTightId_.push_back ( (int)isPassTight );
+
+    // The full ID info:
+    if( verboseIdFlag_ ) {
+      vid::CutFlowResult fullCutFlowData = (*medium_id_cutflow_data)[pho];
+      //
+      // Full printout
+      //
+      printf("\nDEBUG CutFlow, full info for cand with pt=%f:\n", pho->pt());
+      printCutFlowResult(fullCutFlowData);
+      //
+      // Example of how to find the ID decision with one cut removed,
+      // this could be needed for N-1 studies.
+      //
+      const int cutIndexToMask = 4; 
+      // Here we masked the cut by cut index, but you can also do it by cut name string.
+      vid::CutFlowResult maskedCutFlowData 
+      	= fullCutFlowData.getCutFlowResultMasking(cutIndexToMask);
+      printf("DEBUG CutFlow, the result with cut %s masked out\n", 
+      	     maskedCutFlowData.getNameAtIndex(cutIndexToMask).c_str());
+      printCutFlowResult(maskedCutFlowData);
+    }
 
     // Save MC truth match
     isTrue_.push_back( matchToTruth(*pho, genParticles) );
@@ -394,6 +430,23 @@ void PhotonNtuplerVIDDemo::findFirstNonPhotonMother(const reco::Candidate *parti
   return;
 }
 
+void PhotonNtuplerVIDDemo::printCutFlowResult(vid::CutFlowResult &cutflow){
+
+  printf("    CutFlow name= %s    decision is %d\n", 
+	 cutflow.cutFlowName().c_str(),
+	 (int) cutflow.cutFlowPassed());
+  int ncuts = cutflow.cutFlowSize();
+  printf(" Index                               cut name              isMasked    value-cut-upon     pass?\n");
+  for(int icut = 0; icut<ncuts; icut++){
+    printf("  %d       %50s    %d        %f          %d\n", icut,
+	   cutflow.getNameAtIndex(icut).c_str(),
+	   (int)cutflow.isCutMasked(icut),
+	   cutflow.getValueCutUpon(icut),
+	   (int)cutflow.getCutResultByIndex(icut));
+  }
+  printf("    WARNING: the value-cut-upon is bugged in 7.4.7, it is always 1.0\n");
+  
+}
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(PhotonNtuplerVIDDemo);

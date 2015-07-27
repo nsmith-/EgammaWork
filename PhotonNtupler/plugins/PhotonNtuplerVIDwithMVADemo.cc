@@ -85,6 +85,7 @@ class PhotonNtuplerVIDwithMVADemo : public edm::EDAnalyzer {
       void findFirstNonPhotonMother(const reco::Candidate *particle,
 				    int &ancestorPID, int &ancestorStatus);
 
+      void printCutFlowResult(vid::CutFlowResult &cutflow);
 
       // ----------member data ---------------------------
 
@@ -106,6 +107,9 @@ class PhotonNtuplerVIDwithMVADemo : public edm::EDAnalyzer {
       // MVA values and categories (optional)
       edm::EDGetTokenT<edm::ValueMap<float> > mvaValuesMapToken_;
       edm::EDGetTokenT<edm::ValueMap<int> > mvaCategoriesMapToken_;
+
+  // Verbose output for ID
+  bool verboseIdFlag_;
 
   TTree *photonTree_;
 
@@ -147,7 +151,8 @@ PhotonNtuplerVIDwithMVADemo::PhotonNtuplerVIDwithMVADemo(const edm::ParameterSet
   phoMediumIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >
 			       (iConfig.getParameter<edm::InputTag>("phoMediumIdFullInfoMap"))),
   mvaValuesMapToken_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("mvaValuesMap"))),
-  mvaCategoriesMapToken_(consumes<edm::ValueMap<int> >(iConfig.getParameter<edm::InputTag>("mvaCategoriesMap")))
+  mvaCategoriesMapToken_(consumes<edm::ValueMap<int> >(iConfig.getParameter<edm::InputTag>("mvaCategoriesMap"))),
+  verboseIdFlag_(iConfig.getParameter<bool>("phoIdVerbose"))
 {
 
   //
@@ -294,24 +299,31 @@ PhotonNtuplerVIDwithMVADemo::analyze(const edm::Event& iEvent, const edm::EventS
     //
     // Look up and save the ID decisions
     // 
+    // Here we use two ValueMaps, one that contains only the pass/fail
+    // boolean result, and the other that contains the full information
+    // (obviously, the pass/fail result is the same).
+    //
+    // The minimal info:
     bool isPassMedium = (*medium_id_decisions)[pho];
     passMediumId_.push_back( (int)isPassMedium);
 
-    vid::CutFlowResult fullCutFlowData = (*medium_id_cutflow_data)[pho];
-    printf("\nDEBUG: name= %s\n", fullCutFlowData.cutFlowName().c_str());
-    printf("       standard decision= %d   cutflow decision=%d\n",
-	   (int) isPassMedium, (int) fullCutFlowData.cutFlowPassed());
-    int ncuts = fullCutFlowData.cutFlowSize();
-    for(int icut = 0; icut<ncuts; icut++){
-      printf("  %d     name=%s   masked=%d  value=%f    pass=%d\n", icut,
-	     fullCutFlowData.getNameAtIndex(icut).c_str(),
-	     (int)fullCutFlowData.isCutMasked(icut),
-	     fullCutFlowData.getValueCutUpon(icut),
-	     (int)fullCutFlowData.getCutResultByIndex(icut));
-    }
-
+    // Direct access to ValueMaps with the MVA value and category for this candidate
     mvaValue_.push_back( (*mvaValues)[pho] );
     mvaCategory_.push_back( (*mvaCategories)[pho] );
+
+    // The full ID info is accessed below.
+    // Well, for MVA it is not really necessary, since the cut flow contains only
+    // a single cut, the cut on MVA value. Still it could be useful since the
+    // CutFlowResult object contains inside both the pass/fail and the value
+    // of the MVA discriminator for this candidate.
+    if( verboseIdFlag_ ) {
+      vid::CutFlowResult fullCutFlowData = (*medium_id_cutflow_data)[pho];
+      //
+      // Full printout
+      //
+      printf("\nDEBUG CutFlow, full info for cand with pt=%f:\n", pho->pt());
+      printCutFlowResult(fullCutFlowData);
+    }
 
     // Save MC truth match
     isTrue_.push_back( matchToTruth(*pho, genParticles) );
@@ -446,6 +458,25 @@ void PhotonNtuplerVIDwithMVADemo::findFirstNonPhotonMother(const reco::Candidate
   
   return;
 }
+
+void PhotonNtuplerVIDwithMVADemo::printCutFlowResult(vid::CutFlowResult &cutflow){
+
+  printf("    CutFlow name= %s    decision is %d\n", 
+	 cutflow.cutFlowName().c_str(),
+	 (int) cutflow.cutFlowPassed());
+  int ncuts = cutflow.cutFlowSize();
+  printf(" Index                       cut name    isMasked  value-cut-upon    pass?\n");
+  for(int icut = 0; icut<ncuts; icut++){
+    printf("  %d       %30s    %d        %f          %d\n", icut,
+	   cutflow.getNameAtIndex(icut).c_str(),
+	   (int)cutflow.isCutMasked(icut),
+	   cutflow.getValueCutUpon(icut),
+	   (int)cutflow.getCutResultByIndex(icut));
+  }
+  printf("    WARNING: the value-cut-upon is bugged in 7.4.7, it is always 1.0\n");
+  
+}
+
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(PhotonNtuplerVIDwithMVADemo);

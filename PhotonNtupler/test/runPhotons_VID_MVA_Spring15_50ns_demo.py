@@ -18,7 +18,7 @@ process.GlobalTag.globaltag = 'MCRUN2_74_V9A::All'
 #
 # Define input data to read
 #
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
 
 inputFilesAOD = cms.untracked.vstring(
     # AOD test files from 
@@ -77,33 +77,37 @@ for idmod in my_id_modules:
 # Configure an example module for user analysis with photons
 #
 
-process.ntupler = cms.EDAnalyzer('PhotonNtuplerVIDwithMVADemo',
-                                 # The module automatically detects AOD vs miniAOD, so we configure both
-                                 #
-                                 # Common to all formats objects
-                                 #
-                                 # ... none ...
-                                 #
-                                 # Objects specific to AOD format
-                                 #
-                                 photons = cms.InputTag("gedPhotons"),
-                                 genParticles = cms.InputTag("genParticles"),
-                                 #
-                                 # Objects specific to MiniAOD format
-                                 #
-                                 photonsMiniAOD = cms.InputTag("slimmedPhotons"),
-                                 genParticlesMiniAOD = cms.InputTag("prunedGenParticles"),
-                                 #
-                                 # ID decisions (common to all formats)
-                                 # (the names of the ValueMaps for just decision and full info are the same)
-                                 phoMediumIdBoolMap = cms.InputTag("egmPhotonIDs:mvaPhoID-Spring15-50ns-nonTrig-V1-wp90"),
-                                 phoMediumIdFullInfoMap = cms.InputTag("egmPhotonIDs:mvaPhoID-Spring15-50ns-nonTrig-V1-wp90"),
-                                 #
-                                 # ValueMaps with MVA results
-                                 #
-                                 mvaValuesMap     = cms.InputTag("photonMVAValueMapProducer:PhotonMVAEstimatorRun2Spring15NonTrig50nsV1Values"),
-                                 mvaCategoriesMap = cms.InputTag("photonMVAValueMapProducer:PhotonMVAEstimatorRun2Spring15NonTrig50nsV1Categories")
-                                )
+process.ntupler = cms.EDAnalyzer(
+    'PhotonNtuplerVIDwithMVADemo',
+    # The module automatically detects AOD vs miniAOD, so we configure both
+    #
+    # Common to all formats objects
+    #
+    # ... none ...
+    #
+    # Objects specific to AOD format
+    #
+    photons = cms.InputTag("gedPhotons"),
+    genParticles = cms.InputTag("genParticles"),
+    #
+    # Objects specific to MiniAOD format
+    #
+    photonsMiniAOD = cms.InputTag("slimmedPhotons"),
+    genParticlesMiniAOD = cms.InputTag("prunedGenParticles"),
+    #
+    # ID decisions (common to all formats)
+    # (the names of the ValueMaps for just decision and full info are the same)
+    phoMediumIdBoolMap = cms.InputTag("egmPhotonIDs:mvaPhoID-Spring15-50ns-nonTrig-V1-wp90"),
+    phoMediumIdFullInfoMap = cms.InputTag("egmPhotonIDs:mvaPhoID-Spring15-50ns-nonTrig-V1-wp90"),
+    # This is a fairly verbose mode if switched on, with full cut flow 
+    # diagnostics for each candidate. Use it in a low event count test job.
+    phoIdVerbose = cms.bool(False),
+    #
+    # ValueMaps with MVA results
+    #
+    mvaValuesMap     = cms.InputTag("photonMVAValueMapProducer:PhotonMVAEstimatorRun2Spring15NonTrig50nsV1Values"),
+    mvaCategoriesMap = cms.InputTag("photonMVAValueMapProducer:PhotonMVAEstimatorRun2Spring15NonTrig50nsV1Categories")
+    )
 
 process.TFileService = cms.Service("TFileService",
                                    fileName = cms.string( outputFile )

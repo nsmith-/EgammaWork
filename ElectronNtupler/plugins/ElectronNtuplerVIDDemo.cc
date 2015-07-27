@@ -38,6 +38,8 @@
 
 #include "DataFormats/Common/interface/ValueMap.h"
 
+#include "DataFormats/PatCandidates/interface/VIDCutFlowResult.h"
+
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 
@@ -56,56 +58,64 @@
 //
 
 class ElectronNtuplerVIDDemo : public edm::EDAnalyzer {
-   public:
-      explicit ElectronNtuplerVIDDemo(const edm::ParameterSet&);
-      ~ElectronNtuplerVIDDemo();
-
-      static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
-
+public:
+  explicit ElectronNtuplerVIDDemo(const edm::ParameterSet&);
+  ~ElectronNtuplerVIDDemo();
+  
+  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+  
   enum ElectronMatchType {UNMATCHED = 0, 
 			  TRUE_PROMPT_ELECTRON, 
 			  TRUE_ELECTRON_FROM_TAU,
 			  TRUE_NON_PROMPT_ELECTRON}; // The last does not include tau parents
-
-   private:
-      virtual void beginJob() override;
-      virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
-      virtual void endJob() override;
-
-      //virtual void beginRun(edm::Run const&, edm::EventSetup const&) override;
-      //virtual void endRun(edm::Run const&, edm::EventSetup const&) override;
-      //virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
-      //virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
-
-      int matchToTruth(const edm::Ptr<reco::GsfElectron> el, 
-		       const edm::Handle<edm::View<reco::GenParticle>>  &genParticles);
-
-      void findFirstNonElectronMother(const reco::Candidate *particle,
-				    int &ancestorPID, int &ancestorStatus);
-
-      // ----------member data ---------------------------
-
-      // Data members that are the same for AOD and miniAOD
-      edm::EDGetTokenT<reco::BeamSpot> beamSpotToken_;
-
-      // AOD case data members
-      edm::EDGetToken electronsToken_;
-      edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticlesToken_;
-      edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
-      edm::EDGetTokenT<reco::ConversionCollection> conversionsToken_;
-
-      // MiniAOD case data members
-      edm::EDGetToken electronsMiniAODToken_;
-      edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticlesMiniAODToken_;
-      edm::EDGetTokenT<reco::VertexCollection> vtxMiniAODToken_;
-      edm::EDGetTokenT<reco::ConversionCollection> conversionsMiniAODToken_;
-
-      // ID decisions objects
-      edm::EDGetTokenT<edm::ValueMap<bool> > eleVetoIdMapToken_;
-      edm::EDGetTokenT<edm::ValueMap<bool> > eleLooseIdMapToken_;
-      edm::EDGetTokenT<edm::ValueMap<bool> > eleMediumIdMapToken_;
-      edm::EDGetTokenT<edm::ValueMap<bool> > eleTightIdMapToken_;
-      edm::EDGetTokenT<edm::ValueMap<bool> > eleHEEPIdMapToken_;
+  
+private:
+  virtual void beginJob() override;
+  virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
+  virtual void endJob() override;
+  
+  //virtual void beginRun(edm::Run const&, edm::EventSetup const&) override;
+  //virtual void endRun(edm::Run const&, edm::EventSetup const&) override;
+  //virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
+  //virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
+  
+  int matchToTruth(const edm::Ptr<reco::GsfElectron> el, 
+		   const edm::Handle<edm::View<reco::GenParticle>>  &genParticles);
+  
+  void findFirstNonElectronMother(const reco::Candidate *particle,
+				  int &ancestorPID, int &ancestorStatus);
+  
+  void printCutFlowResult(vid::CutFlowResult &cutflow);
+  
+  // ----------member data ---------------------------
+  
+  // Data members that are the same for AOD and miniAOD
+  edm::EDGetTokenT<reco::BeamSpot> beamSpotToken_;
+  
+  // AOD case data members
+  edm::EDGetToken electronsToken_;
+  edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticlesToken_;
+  edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
+  edm::EDGetTokenT<reco::ConversionCollection> conversionsToken_;
+  
+  // MiniAOD case data members
+  edm::EDGetToken electronsMiniAODToken_;
+  edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticlesMiniAODToken_;
+  edm::EDGetTokenT<reco::VertexCollection> vtxMiniAODToken_;
+  edm::EDGetTokenT<reco::ConversionCollection> conversionsMiniAODToken_;
+  
+  // ID decisions objects
+  edm::EDGetTokenT<edm::ValueMap<bool> > eleVetoIdMapToken_;
+  edm::EDGetTokenT<edm::ValueMap<bool> > eleLooseIdMapToken_;
+  edm::EDGetTokenT<edm::ValueMap<bool> > eleMediumIdMapToken_;
+  edm::EDGetTokenT<edm::ValueMap<bool> > eleTightIdMapToken_;
+  edm::EDGetTokenT<edm::ValueMap<bool> > eleHEEPIdMapToken_;
+  
+  // One example of full information about the cut flow
+  edm::EDGetTokenT<edm::ValueMap<vid::CutFlowResult> > eleMediumIdFullInfoMapToken_;
+  
+  // Verbose output for ID
+  bool verboseIdFlag_;
 
   TTree *electronTree_;
 
@@ -145,7 +155,10 @@ ElectronNtuplerVIDDemo::ElectronNtuplerVIDDemo(const edm::ParameterSet& iConfig)
   eleLooseIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleLooseIdMap"))),
   eleMediumIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleMediumIdMap"))),
   eleTightIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleTightIdMap"))),
-  eleHEEPIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleHEEPIdMap")))
+  eleHEEPIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleHEEPIdMap"))),
+  eleMediumIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >
+			       (iConfig.getParameter<edm::InputTag>("eleMediumIdFullInfoMap"))),
+  verboseIdFlag_(iConfig.getParameter<bool>("eleIdVerbose"))
 {
 
   //
@@ -311,6 +324,9 @@ ElectronNtuplerVIDDemo::analyze(const edm::Event& iEvent, const edm::EventSetup&
   iEvent.getByToken(eleMediumIdMapToken_,medium_id_decisions);
   iEvent.getByToken(eleTightIdMapToken_,tight_id_decisions);
   iEvent.getByToken(eleHEEPIdMapToken_ ,heep_id_decisions);
+  // Full cut flow info for one of the working points:
+  edm::Handle<edm::ValueMap<vid::CutFlowResult> > medium_id_cutflow_data;
+  iEvent.getByToken(eleMediumIdFullInfoMapToken_,medium_id_cutflow_data);
 
   // Clear vectors
   nElectrons_ = 0;
@@ -369,6 +385,27 @@ ElectronNtuplerVIDDemo::analyze(const edm::Event& iEvent, const edm::EventSetup&
     passMediumId_.push_back( (int)isPassMedium);
     passTightId_.push_back ( (int)isPassTight );
     passHEEPId_.push_back ( (int)isPassHEEP );
+
+    // The full info for one ID
+    if( verboseIdFlag_ ) {
+      vid::CutFlowResult fullCutFlowData = (*medium_id_cutflow_data)[el];
+      //
+      // Full printout
+      //
+      printf("\nDEBUG CutFlow, full info for cand with pt=%f:\n", el->pt());
+      printCutFlowResult(fullCutFlowData);
+      //
+      // Example of how to find the ID decision with one cut removed,
+      // this could be needed for N-1 studies.
+      //
+      const int cutIndexToMask = 4; 
+      // Here we masked the cut by cut index, but you can also do it by cut name string.
+      vid::CutFlowResult maskedCutFlowData 
+      	= fullCutFlowData.getCutFlowResultMasking(cutIndexToMask);
+      printf("DEBUG CutFlow, the result with cut %s masked out\n", 
+      	     maskedCutFlowData.getNameAtIndex(cutIndexToMask).c_str());
+      printCutFlowResult(maskedCutFlowData);
+    }
 
     // Save MC truth match
     isTrue_.push_back( matchToTruth( el, genParticles) );
@@ -503,6 +540,24 @@ void ElectronNtuplerVIDDemo::findFirstNonElectronMother(const reco::Candidate *p
   }
 
   return;
+}
+
+void ElectronNtuplerVIDDemo::printCutFlowResult(vid::CutFlowResult &cutflow){
+
+  printf("    CutFlow name= %s    decision is %d\n", 
+	 cutflow.cutFlowName().c_str(),
+	 (int) cutflow.cutFlowPassed());
+  int ncuts = cutflow.cutFlowSize();
+  printf(" Index                               cut name              isMasked    value-cut-upon     pass?\n");
+  for(int icut = 0; icut<ncuts; icut++){
+    printf("  %2d      %50s    %d        %f          %d\n", icut,
+	   cutflow.getNameAtIndex(icut).c_str(),
+	   (int)cutflow.isCutMasked(icut),
+	   cutflow.getValueCutUpon(icut),
+	   (int)cutflow.getCutResultByIndex(icut));
+  }
+  printf("    WARNING: the value-cut-upon is bugged in 7.4.7, it is always 0.0 or 1.0\n");
+  
 }
 
 //define this as a plug-in

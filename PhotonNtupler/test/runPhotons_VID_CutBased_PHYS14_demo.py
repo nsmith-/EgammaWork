@@ -16,7 +16,7 @@ process.GlobalTag.globaltag = 'PHYS14_25_V1::All'
 #
 # Define input data to read
 #
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
 
 inputFilesAOD = cms.untracked.vstring(
     # AOD test files from a GJet PT40 dataset
@@ -72,29 +72,35 @@ for idmod in my_id_modules:
 # Configure an example module for user analysis of photons
 #
 
-process.ntupler = cms.EDAnalyzer('PhotonNtuplerVIDDemo',
-                                 # The module automatically detects AOD vs miniAOD, so we configure both
-                                 #
-                                 # Common to all formats objects
-                                 #                                    
-                                 # ... 
-                                 #
-                                 # Objects specific to AOD format
-                                 #
-                                 photons = cms.InputTag("gedPhotons"),
-                                 genParticles = cms.InputTag("genParticles"),
-                                 #
-                                 # Objects specific to MiniAOD format
-                                 #
-                                 photonsMiniAOD = cms.InputTag("slimmedPhotons"),
-                                 genParticlesMiniAOD = cms.InputTag("prunedGenParticles"),
-                                 #
-                                 # ID decisions (common to all formats)
-                                 #
-                                 phoLooseIdMap = cms.InputTag("egmPhotonIDs:cutBasedPhotonID-PHYS14-PU20bx25-V2-standalone-loose"),
-                                 phoMediumIdMap = cms.InputTag("egmPhotonIDs:cutBasedPhotonID-PHYS14-PU20bx25-V2-standalone-medium"),
-                                 phoTightIdMap = cms.InputTag("egmPhotonIDs:cutBasedPhotonID-PHYS14-PU20bx25-V2-standalone-tight")
-                                )
+process.ntupler = cms.EDAnalyzer(
+    'PhotonNtuplerVIDDemo',
+    # The module automatically detects AOD vs miniAOD, so we configure both
+    #
+    # Common to all formats objects
+    #                                    
+    # ... 
+    #
+    # Objects specific to AOD format
+    #
+    photons = cms.InputTag("gedPhotons"),
+    genParticles = cms.InputTag("genParticles"),
+    #
+    # Objects specific to MiniAOD format
+    #
+    photonsMiniAOD = cms.InputTag("slimmedPhotons"),
+    genParticlesMiniAOD = cms.InputTag("prunedGenParticles"),
+    #
+    # ID decisions (common to all formats)
+    #
+    phoLooseIdMap = cms.InputTag("egmPhotonIDs:cutBasedPhotonID-PHYS14-PU20bx25-V2-standalone-loose"),
+    phoMediumIdMap = cms.InputTag("egmPhotonIDs:cutBasedPhotonID-PHYS14-PU20bx25-V2-standalone-medium"),
+    phoTightIdMap = cms.InputTag("egmPhotonIDs:cutBasedPhotonID-PHYS14-PU20bx25-V2-standalone-tight"),
+    #
+    phoMediumIdFullInfoMap = cms.InputTag("egmPhotonIDs:cutBasedPhotonID-PHYS14-PU20bx25-V2-standalone-medium"),
+    # This is a fairly verbose mode if switched on, with full cut flow 
+    # diagnostics for each candidate. Use it in a low event count test job.
+    phoIdVerbose = cms.bool(False)
+    )
 
 process.TFileService = cms.Service("TFileService",
                                    fileName = cms.string( outputFile )

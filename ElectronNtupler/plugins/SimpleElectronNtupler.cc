@@ -52,7 +52,7 @@
 #include "TTree.h"
 #include "Math/VectorUtil.h"
 
-
+#include "RecoEgamma/EgammaTools/interface/EffectiveAreas.h"
 
 //
 // class declaration
@@ -133,6 +133,8 @@ class SimpleElectronNtupler : public edm::EDAnalyzer {
   std::vector<Int_t>   expectedMissingInnerHits_;
   std::vector<Int_t>   passConversionVeto_;     
   std::vector<Int_t>   isTrue_;
+
+  EffectiveAreas   effectiveAreas_;
 };
 
 //
@@ -146,7 +148,8 @@ class SimpleElectronNtupler : public edm::EDAnalyzer {
 //
 // constructors and destructor
 //
-SimpleElectronNtupler::SimpleElectronNtupler(const edm::ParameterSet& iConfig)
+SimpleElectronNtupler::SimpleElectronNtupler(const edm::ParameterSet& iConfig):
+  effectiveAreas_( (iConfig.getParameter<edm::FileInPath>("effAreasConfigFile")).fullPath() )
 {
 
   //
@@ -400,6 +403,10 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     isoNeutralHadrons_.push_back( pfIso.sumNeutralHadronEt );
     isoPhotons_.push_back( pfIso.sumPhotonEt );
     isoChargedFromPU_.push_back( pfIso.sumPUPt );
+
+    float abseta =  abs(el->superCluster()->eta());
+    float eA = effectiveAreas_.getEffectiveArea(abseta);
+    printf(" test EA: abseta=%f  effArea=%f\n", abseta, eA);
 
     // Impact parameter
     reco::GsfTrackRef theTrack = el->gsfTrack();
