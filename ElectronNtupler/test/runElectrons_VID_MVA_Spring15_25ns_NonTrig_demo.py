@@ -36,7 +36,7 @@ inputFilesMiniAOD = cms.untracked.vstring(
 # Set up input/output depending on the format
 # You can list here either AOD or miniAOD files, but not both types mixed
 #
-useAOD = True
+useAOD = False
 
 if useAOD == True :
     inputFiles = inputFilesAOD
