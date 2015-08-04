@@ -29,7 +29,7 @@ bool useWeights = true;
 const float ptmin = 20;
 const float ptmax = 200;
 
-void computeElectronIDEfficiency(WpType wp)
+void computeElectronIDEfficiency(WpType wp, bool useDzAndConv = true)
 {
 
   // This statement below should not be needed, but in one particular node I had to
@@ -74,8 +74,10 @@ void computeElectronIDEfficiency(WpType wp)
   tree->SetBranchAddress("pt", &pt, &b_pt);
   tree->SetBranchAddress("eta", &eta, &b_eta);
 
-  tree->SetBranchAddress("dz", &dz, &b_dz);
-  tree->SetBranchAddress("passConversionVeto", &passConversionVeto, &b_passConversionVeto);
+  if( useDzAndConv ) {
+    tree->SetBranchAddress("dz", &dz, &b_dz);
+    tree->SetBranchAddress("passConversionVeto", &passConversionVeto, &b_passConversionVeto);
+  }
 
   if( wp == WP_VETO )
     tree->SetBranchAddress("passVetoId", &passChosenId, &b_passChosenId);
@@ -132,8 +134,10 @@ void computeElectronIDEfficiency(WpType wp)
     // Get data for all electrons in this event, only vars of interest
     b_pt->GetEntry(tentry);
     b_eta->GetEntry(tentry);
-    b_dz->GetEntry(tentry);
-    b_passConversionVeto->GetEntry(tentry);
+    if( useDzAndConv) {
+      b_dz->GetEntry(tentry);
+      b_passConversionVeto->GetEntry(tentry);
+    }
     b_passChosenId->GetEntry(tentry);
     b_isTrue->GetEntry(tentry);
 
@@ -145,8 +149,10 @@ void computeElectronIDEfficiency(WpType wp)
       if( fabs(eta->at(iele))>1.4442 && fabs(eta->at(iele))<1.566) continue;
       if( fabs(eta->at(iele))>2.5 ) continue;
       // 
-      if( ! (fabs(dz->at(iele))<1) ) continue;
-      if( ! (passConversionVeto->at(iele) == 1) ) continue;
+      if( useDzAndConv ) {
+        if( ! (fabs(dz->at(iele))<1) ) continue;
+        if( ! (passConversionVeto->at(iele) == 1) ) continue;
+      }
 
       bool isBarrel = (fabs(eta->at(iele)) < 1.479);
       

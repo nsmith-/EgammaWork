@@ -18,22 +18,22 @@ process.GlobalTag.globaltag = 'MCRUN2_74_V9A::All'
 #
 # Define input data to read
 #
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
 
 inputFilesAOD = cms.untracked.vstring(
     # AOD test files from 
     # /GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/RunIISpring15DR74-Asympt50ns_MCRUN2_74_V9A-v1/AODSIM
-       '/store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/AODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/0006B4F9-AB04-E511-B402-6CC2173C9150.root',
-       '/store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/AODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/0034FBCC-7C04-E511-AD7C-00266CFCC214.root',
-       '/store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/AODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/0082354B-8F04-E511-9822-B083FED76E05.root',
+       'root://cms-xrd-global.cern.ch//store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/AODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/0006B4F9-AB04-E511-B402-6CC2173C9150.root',
+       'root://cms-xrd-global.cern.ch//store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/AODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/0034FBCC-7C04-E511-AD7C-00266CFCC214.root',
+       'root://cms-xrd-global.cern.ch//store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/AODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/0082354B-8F04-E511-9822-B083FED76E05.root',
     )    
 
 inputFilesMiniAOD = cms.untracked.vstring(
     # MiniAOD test files from 
     # /GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/RunIISpring15DR74-Asympt50ns_MCRUN2_74_V9A-v1/MINIAODSIM
-       '/store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/MINIAODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/02FC90C1-4A05-E511-9282-0025905521B2.root',
-       '/store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/MINIAODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/0421F25A-4705-E511-A0AC-E0CB4E19F981.root',
-       '/store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/MINIAODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/04D633A2-CC05-E511-9663-001E68862A32.root',
+       'root://cms-xrd-global.cern.ch//store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/MINIAODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/02FC90C1-4A05-E511-9282-0025905521B2.root',
+       'root://cms-xrd-global.cern.ch//store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/MINIAODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/0421F25A-4705-E511-A0AC-E0CB4E19F981.root',
+       'root://cms-xrd-global.cern.ch//store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/MINIAODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/04D633A2-CC05-E511-9663-001E68862A32.root',
     )
 
 # Set up input/output depending on the format

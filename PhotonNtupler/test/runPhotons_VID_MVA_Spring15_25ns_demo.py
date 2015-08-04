@@ -17,7 +17,7 @@ process.GlobalTag.globaltag = 'MCRUN2_74_V9::All'
 #
 # Define input data to read
 #
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
 
 inputFilesAOD = cms.untracked.vstring(
     # AOD test files from 
