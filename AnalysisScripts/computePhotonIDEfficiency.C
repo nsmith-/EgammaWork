@@ -17,7 +17,7 @@ const TString wpName[nWP] =
   {"Loose", "Medium", "Tight"};
 
 const TString treename = "ntupler/PhotonTree";
-const TString fname = "../PhotonNtupler/test/photon_ntuple_mini_10K.root";
+const TString fname = "../PhotonNtupler/test/photon_ntuple_mini.root";
 
 bool verbose = false;
 bool smallEventCount = false;

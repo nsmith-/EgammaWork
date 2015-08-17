@@ -99,8 +99,8 @@ process.ntupler = cms.EDAnalyzer('ElectronNtuplerVIDwithMVADemo',
                                  #
                                  # ValueMaps with MVA results
                                  #
-                                 mvaValuesMap     = cms.InputTag("electronMVAValueMapProducer:ElectronMVAEstimatorRun2Phys14NonTrigValues"),
-                                 mvaCategoriesMap = cms.InputTag("electronMVAValueMapProducer:ElectronMVAEstimatorRun2Phys14NonTrigCategories")
+                                 mvaValuesMap     = cms.InputTag("electronMVAValueMapProducer:ElectronMVAEstimatorRun2Phys14NonTrig25nsV1Values"),
+                                 mvaCategoriesMap = cms.InputTag("electronMVAValueMapProducer:ElectronMVAEstimatorRun2Phys14NonTrig25nsV1Categories")
                                 )
 
 process.TFileService = cms.Service("TFileService",
