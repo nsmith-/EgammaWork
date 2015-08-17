@@ -67,7 +67,7 @@ switchOnVIDPhotonIdProducer(process, dataFormat)
 
 # define which IDs we want to produce
 my_id_modules = ['RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_PHYS14_PU20bx25_nonTrig_V1_cff',
-                 'RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Spring15_50ns_nonTrig_V1_cff']
+                 'RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Spring15_50ns_nonTrig_V2_cff']
 
 #add them to the VID producer
 for idmod in my_id_modules:
@@ -97,16 +97,16 @@ process.ntupler = cms.EDAnalyzer(
     #
     # ID decisions (common to all formats)
     # (the names of the ValueMaps for just decision and full info are the same)
-    phoMediumIdBoolMap = cms.InputTag("egmPhotonIDs:mvaPhoID-Spring15-50ns-nonTrig-V1-wp90"),
-    phoMediumIdFullInfoMap = cms.InputTag("egmPhotonIDs:mvaPhoID-Spring15-50ns-nonTrig-V1-wp90"),
+    phoMediumIdBoolMap = cms.InputTag("egmPhotonIDs:mvaPhoID-Spring15-50ns-nonTrig-V2-wp90"),
+    phoMediumIdFullInfoMap = cms.InputTag("egmPhotonIDs:mvaPhoID-Spring15-50ns-nonTrig-V2-wp90"),
     # This is a fairly verbose mode if switched on, with full cut flow 
     # diagnostics for each candidate. Use it in a low event count test job.
     phoIdVerbose = cms.bool(False),
     #
     # ValueMaps with MVA results
     #
-    mvaValuesMap     = cms.InputTag("photonMVAValueMapProducer:PhotonMVAEstimatorRun2Spring15NonTrig50nsV1Values"),
-    mvaCategoriesMap = cms.InputTag("photonMVAValueMapProducer:PhotonMVAEstimatorRun2Spring15NonTrig50nsV1Categories")
+    mvaValuesMap     = cms.InputTag("photonMVAValueMapProducer:PhotonMVAEstimatorRun2Spring15NonTrig50nsV2Values"),
+    mvaCategoriesMap = cms.InputTag("photonMVAValueMapProducer:PhotonMVAEstimatorRun2Spring15NonTrig50nsV2Categories")
     )
 
 process.TFileService = cms.Service("TFileService",
