@@ -4,6 +4,8 @@
 
 using namespace std;
 
+const bool printvars = false;
+
 void vidValidationFast(TString fileName, TString treeName, TString idName){
 
   TFile *fin = new TFile(fileName);
@@ -18,8 +20,10 @@ void vidValidationFast(TString fileName, TString treeName, TString idName){
     return;
   }
 
-  cout << "\nFor reference, here is the content of the tree:" << endl;
-  tree->Show(0);
+  if( printvars){
+    cout << "\nFor reference, here is the content of the tree:" << endl;
+    tree->Show(0);
+  }
 
   TString idCut = TString::Format("%s==1",idName.Data());
 
