@@ -8,9 +8,15 @@ process.load("Configuration.StandardSequences.Geometry_cff")
 
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 # NOTE: the pick the right global tag!
-#    for Spring15 50ns : global tag is MCRUN2_74_V9A
-#  as a rule, find the global tag in the DAS under the Configs for given dataset
-process.GlobalTag.globaltag = 'MCRUN2_74_V9A'
+#    for Spring15 50ns MC: global tag is 'auto:run2_mc_50ns'
+#    for Spring15 25ns MC: global tag is 'auto:run2_mc'
+#    for Run 2 data: global tag is 'auto:run2_data'
+#  as a rule, find the "auto" global tag in $CMSSW_RELEASE_BASE/src/Configuration/AlCa/python/autoCond.py
+#  This auto global tag will look up the "proper" global tag
+#  that is typically found in the DAS under the Configs for given dataset
+#  (although it can be "overridden" by requirements of a given release)
+from Configuration.AlCa.GlobalTag import GlobalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc_50ns', '')
 
 #
 # Define input data to read
@@ -61,7 +67,7 @@ else :
 switchOnVIDElectronIdProducer(process, dataFormat)
 
 # define which IDs we want to produce
-my_id_modules = ['RecoEgamma.ElectronIdentification.Identification.cutBasedElectronID_Spring15_50ns_V1_cff',
+my_id_modules = ['RecoEgamma.ElectronIdentification.Identification.cutBasedElectronID_Spring15_50ns_V2_cff',
                  'RecoEgamma.ElectronIdentification.Identification.heepElectronID_HEEPV60_cff']
 
 #add them to the VID producer
@@ -96,17 +102,17 @@ process.ntupler = cms.EDAnalyzer(
     #
     # ID decisions (common to all formats)
     #
-    eleVetoIdMap = cms.InputTag("egmGsfElectronIDs:cutBasedElectronID-Spring15-50ns-V1-standalone-veto"),
-    eleLooseIdMap = cms.InputTag("egmGsfElectronIDs:cutBasedElectronID-Spring15-50ns-V1-standalone-loose"),
-    eleMediumIdMap = cms.InputTag("egmGsfElectronIDs:cutBasedElectronID-Spring15-50ns-V1-standalone-medium"),
-    eleTightIdMap = cms.InputTag("egmGsfElectronIDs:cutBasedElectronID-Spring15-50ns-V1-standalone-tight"),
+    eleVetoIdMap = cms.InputTag("egmGsfElectronIDs:cutBasedElectronID-Spring15-50ns-V2-standalone-veto"),
+    eleLooseIdMap = cms.InputTag("egmGsfElectronIDs:cutBasedElectronID-Spring15-50ns-V2-standalone-loose"),
+    eleMediumIdMap = cms.InputTag("egmGsfElectronIDs:cutBasedElectronID-Spring15-50ns-V2-standalone-medium"),
+    eleTightIdMap = cms.InputTag("egmGsfElectronIDs:cutBasedElectronID-Spring15-50ns-V2-standalone-tight"),
     eleHEEPIdMap = cms.InputTag("egmGsfElectronIDs:heepElectronID-HEEPV60"),
     # An example of configuration for accessing the full cut flow info for
     # one case is shown below.
     # The map name for the full info is the same as the map name of the
     # corresponding simple pass/fail map above, they are distinguished by
     # the type of the content.
-    eleMediumIdFullInfoMap = cms.InputTag("egmGsfElectronIDs:cutBasedElectronID-Spring15-50ns-V1-standalone-medium"),
+    eleMediumIdFullInfoMap = cms.InputTag("egmGsfElectronIDs:cutBasedElectronID-Spring15-50ns-V2-standalone-medium"),
     # This is a fairly verbose mode if switched on, with full cut flow 
     # diagnostics for each candidate. Use it in a low event count test job.
     eleIdVerbose = cms.bool(False)

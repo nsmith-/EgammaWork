@@ -4,7 +4,7 @@
 
 using namespace std;
 
-const bool printvars = false;
+const bool printvars =false;
 
 void vidValidationFast(TString fileName, TString treeName, TString idName){
 
