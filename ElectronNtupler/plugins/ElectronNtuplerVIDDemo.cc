@@ -556,7 +556,6 @@ void ElectronNtuplerVIDDemo::printCutFlowResult(vid::CutFlowResult &cutflow){
 	   cutflow.getValueCutUpon(icut),
 	   (int)cutflow.getCutResultByIndex(icut));
   }
-  printf("    WARNING: the value-cut-upon is bugged in 7.4.7, it is always 0.0 or 1.0\n");
   
 }
 
