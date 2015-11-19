@@ -4,38 +4,45 @@ process = cms.Process("TestPhotons")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 
-process.load("Configuration.StandardSequences.Geometry_cff")
+process.load("Configuration.StandardSequences.GeometryRecoDB_cff")
 
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 # NOTE: the pick the right global tag!
-#    for PHYS14 scenario PU4bx50 : global tag is ???
-#    for PHYS14 scenario PU20bx25: global tag is PHYS14_25_V1
-#  as a rule, find the global tag in the DAS under the Configs for given dataset
-process.GlobalTag.globaltag = 'PHYS14_25_V1::All'
+#    for Spring15 50ns MC: global tag is 'auto:run2_mc_50'
+#    for Spring15 25ns MC: global tag is 'auto:run2_mc'
+#    for Run 2 data: global tag is 'auto:run2_data'
+#  as a rule, find the "auto" global tag in $CMSSW_RELEASE_BASE/src/Configuration/AlCa/python/autoCond.py
+#  This auto global tag will look up the "proper" global tag
+#  that is typically found in the DAS under the Configs for given dataset
+#  (although it can be "overridden" by requirements of a given release)
+from Configuration.AlCa.GlobalTag import GlobalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc_50ns', '')
 
 #
 # Define input data to read
 #
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
 
 inputFilesAOD = cms.untracked.vstring(
     # AOD test files from a GJet PT40 dataset
-    '/store/mc/Phys14DR/GJet_Pt40_doubleEMEnriched_TuneZ2star_13TeV-pythia6/AODSIM/PU20bx25_PHYS14_25_V1-v1/00000/000B1591-F96E-E411-8885-00266CFFC198.root',
-    '/store/mc/Phys14DR/GJet_Pt40_doubleEMEnriched_TuneZ2star_13TeV-pythia6/AODSIM/PU20bx25_PHYS14_25_V1-v1/00000/0028736A-346C-E411-BBC8-1CC1DE1CE56C.root',
-    '/store/mc/Phys14DR/GJet_Pt40_doubleEMEnriched_TuneZ2star_13TeV-pythia6/AODSIM/PU20bx25_PHYS14_25_V1-v1/00000/005A3A97-3B6C-E411-9BDA-1CC1DE1CE01A.root',
+    # /GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/RunIISpring15DR74-Asympt50ns_MCRUN2_74_V9A-v1/AODSIM
+       'root://cms-xrd-global.cern.ch//store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/AODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/0006B4F9-AB04-E511-B402-6CC2173C9150.root',
+       'root://cms-xrd-global.cern.ch//store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/AODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/0034FBCC-7C04-E511-AD7C-00266CFCC214.root',
+       'root://cms-xrd-global.cern.ch//store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/AODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/0082354B-8F04-E511-9822-B083FED76E05.root',
     )    
 
 inputFilesMiniAOD = cms.untracked.vstring(
     # MiniAOD test files from a GJet PT40 dataset
-    '/store/mc/Phys14DR/GJet_Pt40_doubleEMEnriched_TuneZ2star_13TeV-pythia6/MINIAODSIM/PU20bx25_PHYS14_25_V1-v1/00000/101611CC-026E-E411-B8D7-00266CFFBF88.root',
-    '/store/mc/Phys14DR/GJet_Pt40_doubleEMEnriched_TuneZ2star_13TeV-pythia6/MINIAODSIM/PU20bx25_PHYS14_25_V1-v1/00000/1024D6DB-7D6F-E411-AE1D-00266CFF0608.root',
-    '/store/mc/Phys14DR/GJet_Pt40_doubleEMEnriched_TuneZ2star_13TeV-pythia6/MINIAODSIM/PU20bx25_PHYS14_25_V1-v1/00000/107B7861-7C6F-E411-974E-00266CFFC80C.root',
+    # /GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/RunIISpring15DR74-Asympt50ns_MCRUN2_74_V9A-v1/MINIAODSIM
+       'root://cms-xrd-global.cern.ch//store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/MINIAODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/02FC90C1-4A05-E511-9282-0025905521B2.root',
+       'root://cms-xrd-global.cern.ch//store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/MINIAODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/0421F25A-4705-E511-A0AC-E0CB4E19F981.root',
+       'root://cms-xrd-global.cern.ch//store/mc/RunIISpring15DR74/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_13TeV_Pythia8/MINIAODSIM/Asympt50ns_MCRUN2_74_V9A-v1/60000/04D633A2-CC05-E511-9663-001E68862A32.root',
     )
 
 # Set up input/output depending on the format
 # You can list here either AOD or miniAOD files, but not both types mixed
 #
-useAOD = True
+useAOD = False
 
 if useAOD == True :
     inputFiles = inputFilesAOD
