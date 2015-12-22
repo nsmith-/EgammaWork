@@ -401,12 +401,13 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     
     // Isolation
     GsfElectron::PflowIsolationVariables pfIso = el->pfIsolationVariables();
-    // Compute isolation with delta beta correction for PU
+    // Compute individual PF isolations
     isoChargedHadrons_.push_back( pfIso.sumChargedHadronPt );
     isoNeutralHadrons_.push_back( pfIso.sumNeutralHadronEt );
     isoPhotons_.push_back( pfIso.sumPhotonEt );
     isoChargedFromPU_.push_back( pfIso.sumPUPt );
 
+    // Compute combined relative PF isolation with the effective area correction for pile-up
     float abseta =  abs(el->superCluster()->eta());
     float eA = effectiveAreas_.getEffectiveArea(abseta);
     relCombIsoWithEA_.push_back( ( pfIso.sumChargedHadronPt
