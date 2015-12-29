@@ -127,6 +127,7 @@ class SimpleElectronNtupler : public edm::EDAnalyzer {
   std::vector<Float_t> isoNeutralHadrons_;
   std::vector<Float_t> isoPhotons_;
   std::vector<Float_t> isoChargedFromPU_;
+  std::vector<Float_t> relCombIsoWithEA_;
   std::vector<Float_t> ooEmooP_;
   std::vector<Float_t> d0_;
   std::vector<Float_t> dz_;
@@ -229,6 +230,7 @@ SimpleElectronNtupler::SimpleElectronNtupler(const edm::ParameterSet& iConfig):
   electronTree_->Branch("isoChargedHadrons"      , &isoChargedHadrons_);
   electronTree_->Branch("isoNeutralHadrons"      , &isoNeutralHadrons_);
   electronTree_->Branch("isoPhotons"             , &isoPhotons_);
+  electronTree_->Branch("relCombIsoWithEA"       , &relCombIsoWithEA_);
   electronTree_->Branch("isoChargedFromPU"       , &isoChargedFromPU_);
   electronTree_->Branch("ooEmooP", &ooEmooP_);
   electronTree_->Branch("d0"     , &d0_);
@@ -357,6 +359,7 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   isoChargedHadrons_.clear();
   isoNeutralHadrons_.clear();
   isoPhotons_.clear();
+  relCombIsoWithEA_.clear();
   isoChargedFromPU_.clear();
   ooEmooP_.clear();
   d0_.clear();
@@ -398,15 +401,18 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     
     // Isolation
     GsfElectron::PflowIsolationVariables pfIso = el->pfIsolationVariables();
-    // Compute isolation with delta beta correction for PU
+    // Compute individual PF isolations
     isoChargedHadrons_.push_back( pfIso.sumChargedHadronPt );
     isoNeutralHadrons_.push_back( pfIso.sumNeutralHadronEt );
     isoPhotons_.push_back( pfIso.sumPhotonEt );
     isoChargedFromPU_.push_back( pfIso.sumPUPt );
 
+    // Compute combined relative PF isolation with the effective area correction for pile-up
     float abseta =  abs(el->superCluster()->eta());
     float eA = effectiveAreas_.getEffectiveArea(abseta);
-    printf(" test EA: abseta=%f  effArea=%f\n", abseta, eA);
+    relCombIsoWithEA_.push_back( ( pfIso.sumChargedHadronPt
+				   + std::max( 0.0f, pfIso.sumNeutralHadronEt + pfIso.sumPhotonEt - eA*rho_) )
+				 / el->pt() );
 
     // Impact parameter
     reco::GsfTrackRef theTrack = el->gsfTrack();
