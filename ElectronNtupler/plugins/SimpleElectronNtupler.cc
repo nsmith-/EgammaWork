@@ -52,6 +52,8 @@
 #include "TTree.h"
 #include "Math/VectorUtil.h"
 
+#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
+
 #include "RecoEgamma/EgammaTools/interface/EffectiveAreas.h"
 
 //
@@ -89,6 +91,7 @@ class SimpleElectronNtupler : public edm::EDAnalyzer {
       edm::EDGetTokenT<edm::View<PileupSummaryInfo> > pileupToken_;
       edm::EDGetTokenT<double> rhoToken_;
       edm::EDGetTokenT<reco::BeamSpot> beamSpotToken_;
+      edm::EDGetTokenT<GenEventInfoProduct> genEventInfoProduct_;
 
       // AOD case data members
       edm::EDGetToken electronsToken_;
@@ -107,6 +110,9 @@ class SimpleElectronNtupler : public edm::EDAnalyzer {
   // Vars for PVs
   Int_t pvNTracks_;
 
+  // Vars for weight (can be negative)
+  Float_t genWeight_;
+
   // Vars for pile-up
   Int_t nPUTrue_;    // true pile-up
   Int_t nPU_;        // generated pile-up
@@ -120,6 +126,7 @@ class SimpleElectronNtupler : public edm::EDAnalyzer {
   std::vector<Float_t> etaSC_;
   std::vector<Float_t> phiSC_;
   std::vector<Float_t> dEtaIn_;
+  std::vector<Float_t> dEtaSeed_;
   std::vector<Float_t> dPhiIn_;
   std::vector<Float_t> hOverE_;
   std::vector<Float_t> full5x5_sigmaIetaIeta_;
@@ -158,6 +165,10 @@ SimpleElectronNtupler::SimpleElectronNtupler(const edm::ParameterSet& iConfig):
   //
 
   // Universal tokens for AOD and miniAOD  
+  genEventInfoProduct_ = consumes<GenEventInfoProduct> 
+    (iConfig.getParameter <edm::InputTag>
+     ("genEventInfoProduct"));
+
   pileupToken_ = consumes<edm::View<PileupSummaryInfo> >
     (iConfig.getParameter <edm::InputTag>
      ("pileup"));
@@ -219,11 +230,13 @@ SimpleElectronNtupler::SimpleElectronNtupler(const edm::ParameterSet& iConfig):
   electronTree_->Branch("nPUTrue"    ,  &nPUTrue_ , "nPUTrue/I");
   electronTree_->Branch("rho"        ,  &rho_ , "rho/F");
 
+  electronTree_->Branch("genWeight"    ,  &genWeight_ , "genWeight/F");
   electronTree_->Branch("nEle"    ,  &nElectrons_ , "nEle/I");
   electronTree_->Branch("pt"    ,  &pt_    );
   electronTree_->Branch("etaSC" ,  &etaSC_ );
   electronTree_->Branch("phiSC" ,  &phiSC_ );
   electronTree_->Branch("dEtaIn",  &dEtaIn_);
+  electronTree_->Branch("dEtaSeed",  &dEtaSeed_);
   electronTree_->Branch("dPhiIn",  &dPhiIn_);
   electronTree_->Branch("hOverE",  &hOverE_);
   electronTree_->Branch("full5x5_sigmaIetaIeta", &full5x5_sigmaIetaIeta_);
@@ -263,6 +276,11 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   using namespace edm;
   using namespace reco;
   
+  // Get gen weight info
+  edm::Handle< GenEventInfoProduct > genWeightH;
+  iEvent.getByToken(genEventInfoProduct_,genWeightH);
+  genWeight_ = genWeightH->GenEventInfoProduct::weight();
+
   // Get Pileup info
   Handle<edm::View<PileupSummaryInfo> > pileupHandle;
   iEvent.getByToken(pileupToken_, pileupHandle);
@@ -310,34 +328,36 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     iEvent.getByToken(vtxMiniAODToken_, vertices);
   
   if (vertices->empty()) return; // skip the event if no PV found
-  //const reco::Vertex &pv = vertices->front();
+  const reco::Vertex &pv = vertices->front();
   nPV_    = vertices->size();
   
-  // Find the first vertex in the collection that passes
-  // good quality criteria
-  VertexCollection::const_iterator firstGoodVertex = vertices->end();
-  int firstGoodVertexIdx = 0;
-  for (VertexCollection::const_iterator vtx = vertices->begin(); 
-       vtx != vertices->end(); ++vtx, ++firstGoodVertexIdx) {
-    // Replace isFake() for miniAOD because it requires tracks and miniAOD vertices don't have tracks:
-    // Vertex.h: bool isFake() const {return (chi2_==0 && ndof_==0 && tracks_.empty());}
-    bool isFake = vtx->isFake();
-    if( !isAOD )
-      isFake = (vtx->chi2()==0 && vtx->ndof()==0);
-    // Check the goodness
-    if ( !isFake
-	 &&  vtx->ndof()>=4. && vtx->position().Rho()<=2.0
-	 && fabs(vtx->position().Z())<=24.0) {
-      firstGoodVertex = vtx;
-      break;
-    }
-  }
+  // NOTE FOR RUN 2 THE OLD SELECTION OF GOOD VERTICES BELOW IS DISCOURAGED
+  // // Find the first vertex in the collection that passes
+  // // good quality criteria
+  // VertexCollection::const_iterator firstGoodVertex = vertices->end();
+  // int firstGoodVertexIdx = 0;
+  // for (VertexCollection::const_iterator vtx = vertices->begin(); 
+  //      vtx != vertices->end(); ++vtx, ++firstGoodVertexIdx) {
+  //   // Replace isFake() for miniAOD because it requires tracks and miniAOD vertices don't have tracks:
+  //   // Vertex.h: bool isFake() const {return (chi2_==0 && ndof_==0 && tracks_.empty());}
+  //   bool isFake = vtx->isFake();
+  //   if( !isAOD )
+  //     isFake = (vtx->chi2()==0 && vtx->ndof()==0);
+  //   // Check the goodness
+  //   if ( !isFake
+  // 	 &&  vtx->ndof()>=4. && vtx->position().Rho()<=2.0
+  // 	 && fabs(vtx->position().Z())<=24.0) {
+  //     firstGoodVertex = vtx;
+  //     break;
+  //   }
+  // }
   
-  if ( firstGoodVertex==vertices->end() )
-    return; // skip event if there are no good PVs
+  // if ( firstGoodVertex==vertices->end() )
+  //   return; // skip event if there are no good PVs
   
-  // Seems always zero. Not stored in miniAOD...?
-  pvNTracks_ = firstGoodVertex->nTracks();
+  // // Seems always zero. Not stored in miniAOD...?
+  // pvNTracks_ = firstGoodVertex->nTracks();
+  pvNTracks_ = pv.nTracks();
   
 
   // Get the conversions collection
@@ -353,6 +373,7 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   etaSC_.clear();
   phiSC_.clear();
   dEtaIn_.clear();
+  dEtaSeed_.clear();
   dPhiIn_.clear();
   hOverE_.clear();
   full5x5_sigmaIetaIeta_.clear();
@@ -367,7 +388,7 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   expectedMissingInnerHits_.clear();
   passConversionVeto_.clear();     
   isTrue_.clear();
-  
+
   for (size_t i = 0; i < electrons->size(); ++i){
     const auto el = electrons->ptrAt(i);
   // for (const pat::Electron &el : *electrons) {
@@ -383,6 +404,16 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     
     // ID and matching
     dEtaIn_.push_back( el->deltaEtaSuperClusterTrackAtVtx() );
+    // Calculation of dEtaSeed is taken from VID (by HEEP folks)
+    //   https://github.com/cms-sw/cmssw/blob/CMSSW_8_1_X/RecoEgamma/ElectronIdentification/plugins/cuts/GsfEleDEtaInSeedCut.cc#L31-L32
+    float dEtaSeedValue = 
+      el->superCluster().isNonnull() && el->superCluster()->seed().isNonnull() 
+      ? 
+      el->deltaEtaSuperClusterTrackAtVtx() 
+      - el->superCluster()->eta() 
+      + el->superCluster()->seed()->eta() 
+      : std::numeric_limits<float>::max();
+    dEtaSeed_.push_back( dEtaSeedValue );
     dPhiIn_.push_back( el->deltaPhiSuperClusterTrackAtVtx() );
     hOverE_.push_back( el->hcalOverEcal() );
     full5x5_sigmaIetaIeta_.push_back( el->full5x5_sigmaIetaIeta() );
@@ -416,8 +447,10 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
 
     // Impact parameter
     reco::GsfTrackRef theTrack = el->gsfTrack();
-    d0_.push_back( (-1) * theTrack->dxy(firstGoodVertex->position() ) );
-    dz_.push_back( theTrack->dz( firstGoodVertex->position() ) );
+    d0_.push_back( (-1) * theTrack->dxy(pv.position() ) );
+    dz_.push_back( theTrack->dz( pv.position() ) );
+    // d0_.push_back( (-1) * theTrack->dxy(firstGoodVertex->position() ) );
+    // dz_.push_back( theTrack->dz( firstGoodVertex->position() ) );
 
     // Conversion rejection
     expectedMissingInnerHits_.push_back(el->gsfTrack()->hitPattern()
@@ -431,7 +464,6 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     // Match to generator level truth
     
     isTrue_.push_back( matchToTruth( el, genParticles) );
-    
     
   }
   
