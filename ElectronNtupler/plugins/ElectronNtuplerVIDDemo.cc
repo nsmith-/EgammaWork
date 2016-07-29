@@ -105,14 +105,10 @@ private:
   edm::EDGetTokenT<reco::ConversionCollection> conversionsMiniAODToken_;
   
   // ID decisions objects
-  edm::EDGetTokenT<edm::ValueMap<bool> > eleVetoIdMapToken_;
-  edm::EDGetTokenT<edm::ValueMap<bool> > eleLooseIdMapToken_;
-  edm::EDGetTokenT<edm::ValueMap<bool> > eleMediumIdMapToken_;
-  edm::EDGetTokenT<edm::ValueMap<bool> > eleTightIdMapToken_;
-  edm::EDGetTokenT<edm::ValueMap<bool> > eleHEEPIdMapToken_;
+  edm::EDGetTokenT<edm::ValueMap<bool> > eleIdMapToken_;
   
   // One example of full information about the cut flow
-  edm::EDGetTokenT<edm::ValueMap<vid::CutFlowResult> > eleMediumIdFullInfoMapToken_;
+  edm::EDGetTokenT<edm::ValueMap<vid::CutFlowResult> > eleIdFullInfoMapToken_;
   
   // Verbose output for ID
   bool verboseIdFlag_;
@@ -129,11 +125,7 @@ private:
   std::vector<Float_t> dz_;
   std::vector<Int_t> passConversionVeto_;
 
-  std::vector<Int_t> passVetoId_;
-  std::vector<Int_t> passLooseId_;
-  std::vector<Int_t> passMediumId_;
-  std::vector<Int_t> passTightId_;
-  std::vector<Int_t> passHEEPId_;
+  std::vector<Int_t> passEleId_;
 
   std::vector<Int_t> isTrue_;
 
@@ -151,13 +143,9 @@ private:
 // constructors and destructor
 //
 ElectronNtuplerVIDDemo::ElectronNtuplerVIDDemo(const edm::ParameterSet& iConfig):
-  eleVetoIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleVetoIdMap"))),
-  eleLooseIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleLooseIdMap"))),
-  eleMediumIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleMediumIdMap"))),
-  eleTightIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleTightIdMap"))),
-  eleHEEPIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleHEEPIdMap"))),
-  eleMediumIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >
-			       (iConfig.getParameter<edm::InputTag>("eleMediumIdFullInfoMap"))),
+  eleIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleIdMap"))),
+  eleIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >
+			       (iConfig.getParameter<edm::InputTag>("eleIdFullInfoMap"))),
   verboseIdFlag_(iConfig.getParameter<bool>("eleIdVerbose"))
 {
 
@@ -216,11 +204,7 @@ ElectronNtuplerVIDDemo::ElectronNtuplerVIDDemo(const edm::ParameterSet& iConfig)
   electronTree_->Branch("dz" ,  &dz_ );
   electronTree_->Branch("passConversionVeto" ,  &passConversionVeto_ );
   
-  electronTree_->Branch("passVetoId"  ,  &passVetoId_ );
-  electronTree_->Branch("passLooseId"  ,  &passLooseId_ );
-  electronTree_->Branch("passMediumId" ,  &passMediumId_ );
-  electronTree_->Branch("passTightId"  ,  &passTightId_ );
-  electronTree_->Branch("passHEEPId"  ,  &passHEEPId_ );
+  electronTree_->Branch("passEleId"  ,  &passEleId_ );
 
   electronTree_->Branch("isTrue"             , &isTrue_);
 
@@ -314,19 +298,11 @@ ElectronNtuplerVIDDemo::analyze(const edm::Event& iEvent, const edm::EventSetup&
   // Get the electron ID data from the event stream.
   // Note: this implies that the VID ID modules have been run upstream.
   // If you need more info, check with the EGM group.
-  edm::Handle<edm::ValueMap<bool> > veto_id_decisions;
-  edm::Handle<edm::ValueMap<bool> > loose_id_decisions;
-  edm::Handle<edm::ValueMap<bool> > medium_id_decisions;
-  edm::Handle<edm::ValueMap<bool> > tight_id_decisions; 
-  edm::Handle<edm::ValueMap<bool> > heep_id_decisions;
-  iEvent.getByToken(eleVetoIdMapToken_ ,veto_id_decisions);
-  iEvent.getByToken(eleLooseIdMapToken_ ,loose_id_decisions);
-  iEvent.getByToken(eleMediumIdMapToken_,medium_id_decisions);
-  iEvent.getByToken(eleTightIdMapToken_,tight_id_decisions);
-  iEvent.getByToken(eleHEEPIdMapToken_ ,heep_id_decisions);
+  edm::Handle<edm::ValueMap<bool> > ele_id_decisions;
+  iEvent.getByToken(eleIdMapToken_ ,ele_id_decisions);
   // Full cut flow info for one of the working points:
-  edm::Handle<edm::ValueMap<vid::CutFlowResult> > medium_id_cutflow_data;
-  iEvent.getByToken(eleMediumIdFullInfoMapToken_,medium_id_cutflow_data);
+  edm::Handle<edm::ValueMap<vid::CutFlowResult> > ele_id_cutflow_data;
+  iEvent.getByToken(eleIdFullInfoMapToken_,ele_id_cutflow_data);
 
   // Clear vectors
   nElectrons_ = 0;
@@ -337,11 +313,7 @@ ElectronNtuplerVIDDemo::analyze(const edm::Event& iEvent, const edm::EventSetup&
   dz_.clear();
   passConversionVeto_.clear();     
   //
-  passVetoId_ .clear();
-  passLooseId_ .clear();
-  passMediumId_.clear();
-  passTightId_ .clear();
-  passHEEPId_ .clear();
+  passEleId_ .clear();
   //
   isTrue_.clear();
 
@@ -375,20 +347,12 @@ ElectronNtuplerVIDDemo::analyze(const edm::Event& iEvent, const edm::EventSetup&
     //
     // Look up and save the ID decisions
     // 
-    bool isPassVeto  = (*veto_id_decisions)[el];
-    bool isPassLoose  = (*loose_id_decisions)[el];
-    bool isPassMedium = (*medium_id_decisions)[el];
-    bool isPassTight  = (*tight_id_decisions)[el];
-    bool isPassHEEP = (*heep_id_decisions)[el];
-    passVetoId_.push_back  ( (int)isPassVeto  );
-    passLooseId_.push_back ( (int)isPassLoose );
-    passMediumId_.push_back( (int)isPassMedium);
-    passTightId_.push_back ( (int)isPassTight );
-    passHEEPId_.push_back ( (int)isPassHEEP );
+    bool isPassEleId  = (*ele_id_decisions)[el];
+    passEleId_.push_back  ( (int)isPassEleId  );
 
     // The full info for one ID
     if( verboseIdFlag_ ) {
-      vid::CutFlowResult fullCutFlowData = (*medium_id_cutflow_data)[el];
+      vid::CutFlowResult fullCutFlowData = (*ele_id_cutflow_data)[el];
       //
       // Full printout
       //
