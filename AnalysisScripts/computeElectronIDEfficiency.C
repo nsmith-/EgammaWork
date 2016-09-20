@@ -10,15 +10,16 @@
 #include <vector>
 #include <cmath>
 
-const int nWP = 5;
+const int nWP = 6;
 enum WpType {
-  WP_VETO = 0,
+  WP_CHOSEN = 0,
+  WP_VETO,
   WP_LOOSE,
   WP_MEDIUM, 
   WP_TIGHT,
   WP_HEEP};
 const TString wpName[nWP] = 
-  {"Veto", "Loose", "Medium", "Tight", "HEEP"};
+  {"chosen", "Veto", "Loose", "Medium", "Tight", "HEEP"};
 
 const TString treename = "ntupler/ElectronTree";
 const TString fname = "../ElectronNtupler/test/electron_ntuple_mini.root";
@@ -80,7 +81,9 @@ void computeElectronIDEfficiency(WpType wp, bool useDzAndConv = true)
     tree->SetBranchAddress("passConversionVeto", &passConversionVeto, &b_passConversionVeto);
   }
 
-  if( wp == WP_VETO )
+  if( wp == WP_CHOSEN )
+    tree->SetBranchAddress("passEleId", &passChosenId, &b_passChosenId);
+  else if( wp == WP_VETO )
     tree->SetBranchAddress("passVetoId", &passChosenId, &b_passChosenId);
   else if( wp == WP_LOOSE )
     tree->SetBranchAddress("passLooseId", &passChosenId, &b_passChosenId);
