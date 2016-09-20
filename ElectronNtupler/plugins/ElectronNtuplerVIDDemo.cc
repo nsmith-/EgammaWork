@@ -36,6 +36,8 @@
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 
+#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
+
 #include "DataFormats/Common/interface/ValueMap.h"
 
 #include "DataFormats/PatCandidates/interface/VIDCutFlowResult.h"
@@ -91,6 +93,7 @@ private:
   
   // Data members that are the same for AOD and miniAOD
   edm::EDGetTokenT<reco::BeamSpot> beamSpotToken_;
+  edm::EDGetTokenT<GenEventInfoProduct> genEventInfoProduct_;
   
   // AOD case data members
   edm::EDGetToken electronsToken_;
@@ -129,6 +132,9 @@ private:
 
   std::vector<Int_t> isTrue_;
 
+  // Vars for weight (can be negative)
+  Float_t genWeight_;
+
 };
 
 //
@@ -156,6 +162,10 @@ ElectronNtuplerVIDDemo::ElectronNtuplerVIDDemo(const edm::ParameterSet& iConfig)
   beamSpotToken_    = consumes<reco::BeamSpot> 
     (iConfig.getParameter <edm::InputTag>
      ("beamSpot"));
+
+  genEventInfoProduct_ = consumes<GenEventInfoProduct> 
+    (iConfig.getParameter <edm::InputTag>
+     ("genEventInfoProduct"));
 
   // AOD tokens
   electronsToken_    = mayConsume<edm::View<reco::GsfElectron> >
@@ -207,6 +217,7 @@ ElectronNtuplerVIDDemo::ElectronNtuplerVIDDemo(const edm::ParameterSet& iConfig)
   electronTree_->Branch("passEleId"  ,  &passEleId_ );
 
   electronTree_->Branch("isTrue"             , &isTrue_);
+  electronTree_->Branch("genWeight"    ,  &genWeight_ , "genWeight/F");
 
 }
 
@@ -236,6 +247,11 @@ ElectronNtuplerVIDDemo::analyze(const edm::Event& iEvent, const edm::EventSetup&
   edm::Handle<reco::BeamSpot> theBeamSpot;
   iEvent.getByToken(beamSpotToken_,theBeamSpot);  
   
+  // Get gen weight info
+  edm::Handle< GenEventInfoProduct > genWeightH;
+  iEvent.getByToken(genEventInfoProduct_,genWeightH);
+  genWeight_ = genWeightH->GenEventInfoProduct::weight();
+
   // Retrieve the collection of electrons from the event.
   // If we fail to retrieve the collection with the standard AOD
   // name, we next look for the one with the stndard miniAOD name.
