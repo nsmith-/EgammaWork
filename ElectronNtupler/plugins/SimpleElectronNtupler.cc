@@ -56,6 +56,7 @@
 
 #include "RecoEgamma/EgammaTools/interface/EffectiveAreas.h"
 
+#include "RecoEgamma/Phase2InterimID/interface/HGCalIDTool.h"
 //
 // class declaration
 //
@@ -141,8 +142,28 @@ class SimpleElectronNtupler : public edm::EDAnalyzer {
   std::vector<Int_t>   expectedMissingInnerHits_;
   std::vector<Int_t>   passConversionVeto_;     
   std::vector<Int_t>   isTrue_;
+  // addl phase2
+  std::vector<Int_t>   isTrackerDriven_;
+  std::vector<Int_t>   isEcalDriven_;
+  std::vector<Float_t> scR9_;
+  std::vector<float>   eSuperClusterOverP ;        // the supercluster energy / track momentum at the PCA to the beam spot
+  std::vector<float>   eSeedClusterOverP ;         // the seed cluster energy / track momentum at the PCA to the beam spot
+  std::vector<float>   eSeedClusterOverPout ;      // the seed cluster energy / track momentum at calo extrapolated from the outermost track state
+  std::vector<float>   eEleClusterOverPout ;       // the electron cluster energy / track momentum at calo extrapolated from the outermost track state
+  std::vector<float>   deltaEtaSuperClusterAtVtx ; // the supercluster eta - track eta position at calo extrapolated from innermost track state
+  std::vector<float>   deltaEtaSeedClusterAtCalo ; // the seed cluster eta - track eta position at calo extrapolated from the outermost track state
+  std::vector<float>   deltaEtaEleClusterAtCalo ;  // the electron cluster eta - track eta position at calo extrapolated from the outermost state
+  std::vector<float>   deltaPhiEleClusterAtCalo ;  // the electron cluster phi - track phi position at calo extrapolated from the outermost track state
+  std::vector<float>   deltaPhiSuperClusterAtVtx ; // the supercluster phi - track phi position at calo extrapolated from the innermost track state
+  std::vector<float>   deltaPhiSeedClusterAtCalo ; // the seed cluster phi - track phi position at calo extrapolated from the outermost track state
+  std::vector<float>   hOverE_hgcalSafe_;
+  std::vector<float>   hgcId_startPosition_;
+  std::vector<float>   hgcId_sigmaietaieta_;
+  std::vector<float>   hgcId_lengthCompatibility_;
 
   EffectiveAreas   effectiveAreas_;
+
+  std::unique_ptr<HGCalIDTool> hgcEmId_;
 };
 
 //
@@ -181,6 +202,7 @@ SimpleElectronNtupler::SimpleElectronNtupler(const edm::ParameterSet& iConfig):
     (iConfig.getParameter <edm::InputTag>
      ("beamSpot"));
 
+
   // AOD tokens
   electronsToken_    = mayConsume<edm::View<reco::GsfElectron> >
     (iConfig.getParameter<edm::InputTag>
@@ -217,6 +239,10 @@ SimpleElectronNtupler::SimpleElectronNtupler(const edm::ParameterSet& iConfig):
     (iConfig.getParameter<edm::InputTag>
      ("conversionsMiniAOD"));
 
+  const edm::ParameterSet& hgcIdCfg = iConfig.getParameterSet("HGCalIDToolConfig");
+  auto cc = consumesCollector();
+  hgcEmId_.reset( new HGCalIDTool(hgcIdCfg, cc) );
+
   //
   // Set up the ntuple structure
   //
@@ -251,6 +277,23 @@ SimpleElectronNtupler::SimpleElectronNtupler(const edm::ParameterSet& iConfig):
   electronTree_->Branch("expectedMissingInnerHits", &expectedMissingInnerHits_);
   electronTree_->Branch("passConversionVeto", &passConversionVeto_);
   electronTree_->Branch("isTrue"    , &isTrue_);
+  electronTree_->Branch("isTrackerDriven"    , &isTrackerDriven_);
+  electronTree_->Branch("isEcalDriven"    , &isEcalDriven_);
+  electronTree_->Branch("scR9"    , &scR9_);
+  electronTree_->Branch("eSuperClusterOverP", &eSuperClusterOverP );
+  electronTree_->Branch("eSeedClusterOverP", &eSeedClusterOverP );
+  electronTree_->Branch("eSeedClusterOverPout", &eSeedClusterOverPout );
+  electronTree_->Branch("eEleClusterOverPout", &eEleClusterOverPout );
+  electronTree_->Branch("deltaEtaSuperClusterAtVtx", &deltaEtaSuperClusterAtVtx );
+  electronTree_->Branch("deltaEtaSeedClusterAtCalo", &deltaEtaSeedClusterAtCalo );
+  electronTree_->Branch("deltaEtaEleClusterAtCalo", &deltaEtaEleClusterAtCalo );
+  electronTree_->Branch("deltaPhiEleClusterAtCalo", &deltaPhiEleClusterAtCalo );
+  electronTree_->Branch("deltaPhiSuperClusterAtVtx", &deltaPhiSuperClusterAtVtx );
+  electronTree_->Branch("deltaPhiSeedClusterAtCalo", &deltaPhiSeedClusterAtCalo );
+  electronTree_->Branch("hOverE_hgcalSafe", &hOverE_hgcalSafe_);
+  electronTree_->Branch("hgcId_startPosition", &hgcId_startPosition_);
+  electronTree_->Branch("hgcId_sigmaietaieta", &hgcId_sigmaietaieta_);
+  electronTree_->Branch("hgcId_lengthCompatibility", &hgcId_lengthCompatibility_);
  
 }
 
@@ -367,6 +410,9 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   else
     iEvent.getByToken(conversionsMiniAODToken_, conversions);
 
+  hgcEmId_->getEventSetup(iSetup);
+  hgcEmId_->getEvent(iEvent);
+
   // Loop over electrons
   nElectrons_ = 0;
   pt_.clear();
@@ -388,6 +434,23 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   expectedMissingInnerHits_.clear();
   passConversionVeto_.clear();     
   isTrue_.clear();
+  isTrackerDriven_.clear();
+  isEcalDriven_.clear();
+  scR9_.clear();
+  eSuperClusterOverP.clear( );
+  eSeedClusterOverP.clear( );
+  eSeedClusterOverPout.clear( );
+  eEleClusterOverPout.clear( );
+  deltaEtaSuperClusterAtVtx.clear( );
+  deltaEtaSeedClusterAtCalo.clear( );
+  deltaEtaEleClusterAtCalo.clear( );
+  deltaPhiEleClusterAtCalo.clear( );
+  deltaPhiSuperClusterAtVtx.clear( );
+  deltaPhiSeedClusterAtCalo.clear( );
+  hOverE_hgcalSafe_.clear();
+  hgcId_startPosition_.clear();
+  hgcId_sigmaietaieta_.clear();
+  hgcId_lengthCompatibility_.clear();
 
   for (size_t i = 0; i < electrons->size(); ++i){
     const auto el = electrons->ptrAt(i);
@@ -401,6 +464,44 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     pt_.push_back( el->pt() );
     etaSC_.push_back( el->superCluster()->eta() );
     phiSC_.push_back( el->superCluster()->phi() );
+
+    // Phase2
+    isTrackerDriven_.push_back( el->trackerDrivenSeed() );
+    isEcalDriven_.push_back( el->ecalDrivenSeed() );
+    scR9_.push_back( el->r9() );
+    eSuperClusterOverP.push_back( el->eSuperClusterOverP() );
+    eSeedClusterOverP.push_back( el->eSeedClusterOverP() );
+    eSeedClusterOverPout.push_back( el->eSeedClusterOverPout() );
+    eEleClusterOverPout.push_back( el->eEleClusterOverPout() );
+    deltaEtaSuperClusterAtVtx.push_back( el->deltaEtaSuperClusterTrackAtVtx() );
+    deltaEtaSeedClusterAtCalo.push_back( el->deltaEtaSeedClusterTrackAtCalo() );
+    deltaEtaEleClusterAtCalo.push_back( el->deltaEtaEleClusterTrackAtCalo() );
+    deltaPhiEleClusterAtCalo.push_back( el->deltaPhiEleClusterTrackAtCalo() );
+    deltaPhiSuperClusterAtVtx.push_back( el->deltaPhiSuperClusterTrackAtVtx() );
+    deltaPhiSeedClusterAtCalo.push_back( el->deltaPhiSeedClusterTrackAtCalo() );
+
+    if ( el->superCluster().isNonnull() && el->superCluster()->seed().isNonnull() ) {
+      const reco::CaloCluster * cluster = el->superCluster()->seed().get();
+      bool isHGCal = hgcEmId_->setClusterPtr(cluster);
+      if ( isHGCal ) {
+        hOverE_hgcalSafe_.push_back( hgcEmId_->getHadronFraction() );
+        hgcId_startPosition_.push_back( std::abs(hgcEmId_->getStartPosition().z()) );
+        hgcId_sigmaietaieta_.push_back( hgcEmId_->getSigmaEtaEta() );
+        hgcId_lengthCompatibility_.push_back( hgcEmId_->getLengthCompatibility() );
+      }
+      else {
+        hOverE_hgcalSafe_.push_back( el->hcalOverEcal() );
+        hgcId_startPosition_.push_back( -1. );
+        hgcId_sigmaietaieta_.push_back( el->full5x5_sigmaIetaIeta() );
+        hgcId_lengthCompatibility_.push_back( -1. );
+      }
+    }
+    else {
+      hOverE_hgcalSafe_.push_back( -1. );
+      hgcId_startPosition_.push_back( -1. );
+      hgcId_sigmaietaieta_.push_back( -1. );
+      hgcId_lengthCompatibility_.push_back( -1. );
+    }
     
     // ID and matching
     dEtaIn_.push_back( el->deltaEtaSuperClusterTrackAtVtx() );

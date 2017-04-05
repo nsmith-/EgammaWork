@@ -5,4 +5,7 @@
 <use name="DataFormats/PatCandidates" />
 <use name="RecoEgamma/EgammaTools" />
 <use name="RecoEgamma/ElectronIdentification" />
+<use name="RecoEgamma/Phase2InterimID" />
+<use name="RecoLocalCalo/HGCalRecAlgos" />
+<use name="RecoEcal/EgammaClusterAlgos" />
 <flags EDM_PLUGIN="1"/>
