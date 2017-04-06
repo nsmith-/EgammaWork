@@ -480,26 +480,17 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     deltaPhiSuperClusterAtVtx.push_back( el->deltaPhiSuperClusterTrackAtVtx() );
     deltaPhiSeedClusterAtCalo.push_back( el->deltaPhiSeedClusterTrackAtCalo() );
 
-    if ( el->superCluster().isNonnull() && el->superCluster()->seed().isNonnull() ) {
-      const reco::CaloCluster * cluster = el->superCluster()->seed().get();
-      bool isHGCal = hgcEmId_->setClusterPtr(cluster);
-      if ( isHGCal ) {
-        hOverE_hgcalSafe_.push_back( hgcEmId_->getHadronFraction() );
-        hgcId_startPosition_.push_back( std::abs(hgcEmId_->getStartPosition().z()) );
-        hgcId_sigmaietaieta_.push_back( hgcEmId_->getSigmaEtaEta() );
-        hgcId_lengthCompatibility_.push_back( hgcEmId_->getLengthCompatibility() );
-      }
-      else {
-        hOverE_hgcalSafe_.push_back( el->hcalOverEcal() );
-        hgcId_startPosition_.push_back( -1. );
-        hgcId_sigmaietaieta_.push_back( el->full5x5_sigmaIetaIeta() );
-        hgcId_lengthCompatibility_.push_back( -1. );
-      }
+    bool isHGCal = hgcEmId_->setElectronPtr(&*el);
+    if ( isHGCal ) {
+      hOverE_hgcalSafe_.push_back( hgcEmId_->getClusterHadronFraction() );
+      hgcId_startPosition_.push_back( std::abs(hgcEmId_->getClusterStartPosition().z()) );
+      hgcId_sigmaietaieta_.push_back( hgcEmId_->getClusterSigmaEtaEta() );
+      hgcId_lengthCompatibility_.push_back( hgcEmId_->getClusterLengthCompatibility() );
     }
     else {
-      hOverE_hgcalSafe_.push_back( -1. );
+      hOverE_hgcalSafe_.push_back( el->hcalOverEcal() );
       hgcId_startPosition_.push_back( -1. );
-      hgcId_sigmaietaieta_.push_back( -1. );
+      hgcId_sigmaietaieta_.push_back( el->full5x5_sigmaIetaIeta() );
       hgcId_lengthCompatibility_.push_back( -1. );
     }
     
