@@ -106,6 +106,8 @@ class SimpleElectronNtupler : public edm::EDAnalyzer {
       edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticlesMiniAODToken_;
       edm::EDGetTokenT<reco::ConversionCollection> conversionsMiniAODToken_;
 
+      edm::EDGetTokenT<edm::ValueMap<double> > trackIsoValueMapToken_;
+
   TTree *electronTree_;
 
   // Vars for PVs
@@ -160,6 +162,12 @@ class SimpleElectronNtupler : public edm::EDAnalyzer {
   std::vector<float>   hgcId_startPosition_;
   std::vector<float>   hgcId_sigmaietaieta_;
   std::vector<float>   hgcId_lengthCompatibility_;
+  std::vector<float>   hgcId_deltaEtaStartPosition_;
+  std::vector<float>   hgcId_deltaPhiStartPosition_;
+  std::vector<float>   hgcId_deltaEtaStartPositionSimple_;
+  std::vector<float>   hgcId_deltaPhiStartPositionSimple_;
+  std::vector<float>   hgcId_cosTrackShowerAngle_;
+  std::vector<float>   trackIsoR04jurassic_;
 
   EffectiveAreas   effectiveAreas_;
 
@@ -239,6 +247,8 @@ SimpleElectronNtupler::SimpleElectronNtupler(const edm::ParameterSet& iConfig):
     (iConfig.getParameter<edm::InputTag>
      ("conversionsMiniAOD"));
 
+  trackIsoValueMapToken_ = consumes< edm::ValueMap<double> >(iConfig.getParameter<edm::InputTag>("trackIsoValueMap"));
+
   const edm::ParameterSet& hgcIdCfg = iConfig.getParameterSet("HGCalIDToolConfig");
   auto cc = consumesCollector();
   hgcEmId_.reset( new HGCalIDTool(hgcIdCfg, cc) );
@@ -290,10 +300,16 @@ SimpleElectronNtupler::SimpleElectronNtupler(const edm::ParameterSet& iConfig):
   electronTree_->Branch("deltaPhiEleClusterAtCalo", &deltaPhiEleClusterAtCalo );
   electronTree_->Branch("deltaPhiSuperClusterAtVtx", &deltaPhiSuperClusterAtVtx );
   electronTree_->Branch("deltaPhiSeedClusterAtCalo", &deltaPhiSeedClusterAtCalo );
-  electronTree_->Branch("hOverE_hgcalSafe", &hOverE_hgcalSafe_);
-  electronTree_->Branch("hgcId_startPosition", &hgcId_startPosition_);
-  electronTree_->Branch("hgcId_sigmaietaieta", &hgcId_sigmaietaieta_);
+  electronTree_->Branch("hgcId_hadronFraction", &hOverE_hgcalSafe_);
+  electronTree_->Branch("hgcId_absEndcapShowerZ", &hgcId_startPosition_);
+  electronTree_->Branch("hgcId_sigmaEtaEta", &hgcId_sigmaietaieta_);
   electronTree_->Branch("hgcId_lengthCompatibility", &hgcId_lengthCompatibility_);
+  electronTree_->Branch("hgcId_deltaEtaStartPosition", &hgcId_deltaEtaStartPosition_);
+  electronTree_->Branch("hgcId_deltaPhiStartPosition", &hgcId_deltaPhiStartPosition_);
+  electronTree_->Branch("hgcId_deltaEtaStartPositionSimple", &hgcId_deltaEtaStartPositionSimple_);
+  electronTree_->Branch("hgcId_deltaPhiStartPositionSimple", &hgcId_deltaPhiStartPositionSimple_);
+  electronTree_->Branch("hgcId_cosTrackShowerAxisAngle", &hgcId_cosTrackShowerAngle_);
+  electronTree_->Branch("trackIsoR04jurassic", &trackIsoR04jurassic_);
  
 }
 
@@ -410,6 +426,9 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   else
     iEvent.getByToken(conversionsMiniAODToken_, conversions);
 
+  edm::Handle<edm::ValueMap<double> > trackIsoValueMap;
+  iEvent.getByToken(trackIsoValueMapToken_, trackIsoValueMap);
+
   hgcEmId_->getEventSetup(iSetup);
   hgcEmId_->getEvent(iEvent);
 
@@ -451,6 +470,12 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   hgcId_startPosition_.clear();
   hgcId_sigmaietaieta_.clear();
   hgcId_lengthCompatibility_.clear();
+  hgcId_deltaEtaStartPosition_.clear();
+  hgcId_deltaPhiStartPosition_.clear();
+  hgcId_deltaEtaStartPositionSimple_.clear();
+  hgcId_deltaPhiStartPositionSimple_.clear();
+  hgcId_cosTrackShowerAngle_.clear();
+  trackIsoR04jurassic_.clear();
 
   for (size_t i = 0; i < electrons->size(); ++i){
     const auto el = electrons->ptrAt(i);
@@ -486,14 +511,26 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
       hgcId_startPosition_.push_back( std::abs(hgcEmId_->getClusterStartPosition().z()) );
       hgcId_sigmaietaieta_.push_back( hgcEmId_->getClusterSigmaEtaEta() );
       hgcId_lengthCompatibility_.push_back( hgcEmId_->getClusterLengthCompatibility() );
+      hgcId_deltaEtaStartPosition_.push_back( el->trackPositionAtCalo().eta() - hgcEmId_->getClusterStartPosition().eta() );
+      hgcId_deltaPhiStartPosition_.push_back( reco::deltaPhi(el->trackPositionAtCalo().phi(), hgcEmId_->getClusterStartPosition().phi()) );
+      hgcId_deltaEtaStartPositionSimple_.push_back( el->trackPositionAtCalo().eta() - hgcEmId_->getClusterStartPositionSimple().eta() );
+      hgcId_deltaPhiStartPositionSimple_.push_back( reco::deltaPhi(el->trackPositionAtCalo().phi(), hgcEmId_->getClusterStartPositionSimple().phi()) );
+      hgcId_cosTrackShowerAngle_.push_back( el->trackMomentumOut().Unit().Dot(hgcEmId_->getClusterShowerAxis().Unit()) );
     }
     else {
       hOverE_hgcalSafe_.push_back( el->hcalOverEcal() );
       hgcId_startPosition_.push_back( -1. );
       hgcId_sigmaietaieta_.push_back( el->full5x5_sigmaIetaIeta() );
       hgcId_lengthCompatibility_.push_back( -1. );
+      hgcId_deltaEtaStartPosition_.push_back( -1.);
+      hgcId_deltaPhiStartPosition_.push_back( -1.);
+      hgcId_deltaEtaStartPositionSimple_.push_back( -1.);
+      hgcId_deltaPhiStartPositionSimple_.push_back( -1.);
+      hgcId_cosTrackShowerAngle_.push_back( -1.);
     }
     
+    trackIsoR04jurassic_.push_back( (*trackIsoValueMap)[el] );
+
     // ID and matching
     dEtaIn_.push_back( el->deltaEtaSuperClusterTrackAtVtx() );
     // Calculation of dEtaSeed is taken from VID (by HEEP folks)
