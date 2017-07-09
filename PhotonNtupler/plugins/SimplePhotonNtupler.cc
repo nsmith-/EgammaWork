@@ -64,6 +64,7 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
   enum PhotonMatchType {UNMATCHED = 0, 
 			MATCHED_FROM_GUDSCB,
 			MATCHED_FROM_PI0,
+      MATCHED_FROM_HIGGS,
 			MATCHED_FROM_OTHER_SOURCES};
   
  private:
@@ -76,8 +77,8 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
   //virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
   //virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
   
-  int matchToTruth(const reco::Photon &pho, 
-		   const edm::Handle<edm::View<reco::GenParticle>>  &genParticles);
+  int matchToTruth(const pat::Photon &pho, 
+		   const edm::Handle<edm::View<reco::GenParticle>>  &genParticles, float& gen_pt);
   
   void findFirstNonPhotonMother(const reco::Candidate *particle,
 				int &ancestorPID, int &ancestorStatus);
@@ -88,7 +89,6 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
   edm::EDGetTokenT<double> rhoToken_;
   
   // AOD case data members
-  edm::EDGetToken photonsToken_;
   edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticlesToken_;
   
   // MiniAOD case data members
@@ -116,6 +116,7 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
   std::vector<Float_t> full5x5_sigmaIetaIeta_;
   std::vector<Float_t> hOverE_;
   std::vector<Int_t> hasPixelSeed_;
+  std::vector<Int_t> conversionSafeElectronVeto_;
 
   std::vector<Float_t> isoChargedHadrons_;
   std::vector<Float_t> isoNeutralHadrons_;
@@ -125,7 +126,12 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
   std::vector<Float_t> isoNeutralHadronsWithEA_;
   std::vector<Float_t> isoPhotonsWithEA_;
 
+  std::vector<Float_t> isoChargedHadronsPuppi_;
+  std::vector<Float_t> isoNeutralHadronsPuppi_;
+  std::vector<Float_t> isoPhotonsPuppi_;
+
   std::vector<Int_t> isTrue_;
+  std::vector<Float_t> gen_pt_;
 
   // Effective area constants for all isolation types
   EffectiveAreas effAreaChHadrons_;
@@ -167,17 +173,13 @@ SimplePhotonNtupler::SimplePhotonNtupler(const edm::ParameterSet& iConfig):
   // Prepare tokens for all input collections and objects
   //
   
-  // AOD tokens
-  photonsToken_ = mayConsume<edm::View<reco::Photon> >
-    (iConfig.getParameter<edm::InputTag>
-     ("photons"));
   
   genParticlesToken_ = mayConsume<edm::View<reco::GenParticle> >
     (iConfig.getParameter<edm::InputTag>
      ("genParticles"));
     
   // MiniAOD tokens
-  photonsMiniAODToken_ = mayConsume<edm::View<reco::Photon> >
+  photonsMiniAODToken_ = mayConsume<edm::View<pat::Photon> >
     (iConfig.getParameter<edm::InputTag>
      ("photonsMiniAOD"));
 
@@ -200,6 +202,7 @@ SimplePhotonNtupler::SimplePhotonNtupler(const edm::ParameterSet& iConfig):
   photonTree_->Branch("full5x5_sigmaIetaIeta"  , &full5x5_sigmaIetaIeta_);
   photonTree_->Branch("hOverE"                 ,  &hOverE_);
   photonTree_->Branch("hasPixelSeed"           ,  &hasPixelSeed_);
+  photonTree_->Branch("conversionSafeElectronVeto"           ,  &conversionSafeElectronVeto_);
 
   photonTree_->Branch("isoChargedHadrons"      , &isoChargedHadrons_);
   photonTree_->Branch("isoNeutralHadrons"      , &isoNeutralHadrons_);
@@ -209,7 +212,12 @@ SimplePhotonNtupler::SimplePhotonNtupler(const edm::ParameterSet& iConfig):
   photonTree_->Branch("isoNeutralHadronsWithEA"      , &isoNeutralHadronsWithEA_);
   photonTree_->Branch("isoPhotonsWithEA"             , &isoPhotonsWithEA_);
 
+  photonTree_->Branch("isoChargedHadronsPuppi"      , &isoChargedHadronsPuppi_);
+  photonTree_->Branch("isoNeutralHadronsPuppi"      , &isoNeutralHadronsPuppi_);
+  photonTree_->Branch("isoPhotonsPuppi"             , &isoPhotonsPuppi_);
+
   photonTree_->Branch("isTrue"             , &isTrue_);
+  photonTree_->Branch("gen_pt"             , &gen_pt_);
 
 }
 
@@ -240,13 +248,9 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   // name, we next look for the one with the stndard miniAOD name. 
   //   We use exactly the same handle for AOD and miniAOD formats
   // since pat::Photon objects can be recast as reco::Photon objects.
-  edm::Handle<edm::View<reco::Photon> > photons;
-  bool isAOD = true;
-  iEvent.getByToken(photonsToken_, photons);
-  if( !photons.isValid() ){
-    isAOD = false;
-    iEvent.getByToken(photonsMiniAODToken_,photons);
-  }
+  edm::Handle<edm::View<pat::Photon> > photons;
+  bool isAOD = false;
+  iEvent.getByToken(photonsMiniAODToken_,photons);
 
   // Get generator level info
   Handle<edm::View<reco::GenParticle> > genParticles;
@@ -281,6 +285,7 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   full5x5_sigmaIetaIeta_.clear();
   hOverE_.clear();
   hasPixelSeed_.clear();
+  conversionSafeElectronVeto_.clear();
   //
   isoChargedHadrons_.clear();
   isoNeutralHadrons_.clear();
@@ -290,7 +295,12 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   isoNeutralHadronsWithEA_.clear();
   isoPhotonsWithEA_.clear();
   //
+  isoChargedHadronsPuppi_.clear();
+  isoNeutralHadronsPuppi_.clear();
+  isoPhotonsPuppi_.clear();
+  //
   isTrue_.clear();
+  gen_pt_.clear();
 
   // Loop over photons
   for (size_t i = 0; i < photons->size(); ++i){
@@ -311,6 +321,7 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
 
     hOverE_                .push_back( pho->hadTowOverEm() );
     hasPixelSeed_          .push_back( (Int_t)pho->hasPixelSeed() );
+    conversionSafeElectronVeto_.push_back( (Int_t)pho->passElectronVeto() );
 
     // Get values from ValueMaps, use the photon pointer as the key.
     // Note: starting from CMSSW 7.2.1 or so one can get any full5x5 quantity
@@ -333,8 +344,14 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     isoPhotonsWithEA_ .push_back( std::max( (float)0.0, phIso 
 					    - rho_*effAreaPhotons_.getEffectiveArea(abseta)));
 
+    isoChargedHadronsPuppi_.push_back(pho->puppiChargedHadronIso());
+    isoNeutralHadronsPuppi_.push_back(pho->puppiNeutralHadronIso());
+    isoPhotonsPuppi_.push_back(pho->puppiPhotonIso());
+
     // Save MC truth match
-    isTrue_.push_back( matchToTruth(*pho, genParticles) );
+    float gen_pt = -1.;
+    isTrue_.push_back( matchToTruth(*pho, genParticles, gen_pt) );
+    gen_pt_.push_back(gen_pt);
 
    }
    
@@ -398,9 +415,9 @@ SimplePhotonNtupler::fillDescriptions(edm::ConfigurationDescriptions& descriptio
   descriptions.addDefault(desc);
 }
 
-int SimplePhotonNtupler::matchToTruth(const reco::Photon &pho, 
+int SimplePhotonNtupler::matchToTruth(const pat::Photon &pho, 
 				   const edm::Handle<edm::View<reco::GenParticle>>  
-				   &genParticles)
+				   &genParticles, float& gen_pt)
 {
   // 
   // Explicit loop and geometric matching method 
@@ -426,6 +443,7 @@ int SimplePhotonNtupler::matchToTruth(const reco::Photon &pho,
   if( !(closestPhoton != 0 && dR < 0.1) ) {
     return UNMATCHED;
   }
+  gen_pt = closestPhoton->pt();
 
   // Find ID of the parent of the found generator level photon match
   int ancestorPID = -999; 
@@ -440,6 +458,8 @@ int SimplePhotonNtupler::matchToTruth(const reco::Photon &pho,
     // So it is not from g, u, d, s, c, b. Check if it is from pi0 or not. 
     if( abs(ancestorPID) == 111 )
       return MATCHED_FROM_PI0;
+    else if( abs(ancestorPID) == 25 )
+      return MATCHED_FROM_HIGGS;
     else
       return MATCHED_FROM_OTHER_SOURCES;
   }
