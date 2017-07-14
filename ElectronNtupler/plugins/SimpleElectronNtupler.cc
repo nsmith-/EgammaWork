@@ -83,7 +83,7 @@ class SimpleElectronNtupler : public edm::EDAnalyzer {
       //virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
       //virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
 
-      int matchToTruth(const edm::Ptr<reco::GsfElectron> el,  
+      int matchToTruth(const edm::Ptr<pat::Electron> el,  
 		       const edm::Handle<edm::View<reco::GenParticle>>  &prunedGenParticles);
       void findFirstNonElectronMother(const reco::Candidate *particle, int &ancestorPID, int &ancestorStatus);
   
@@ -138,6 +138,9 @@ class SimpleElectronNtupler : public edm::EDAnalyzer {
   std::vector<Float_t> isoPhotons_;
   std::vector<Float_t> isoChargedFromPU_;
   std::vector<Float_t> relCombIsoWithEA_;
+  std::vector<Float_t> isoChargedHadronsPuppi_;
+  std::vector<Float_t> isoNeutralHadronsPuppi_;
+  std::vector<Float_t> isoPhotonsPuppi_;
   std::vector<Float_t> ooEmooP_;
   std::vector<Float_t> d0_;
   std::vector<Float_t> dz_;
@@ -212,7 +215,7 @@ SimpleElectronNtupler::SimpleElectronNtupler(const edm::ParameterSet& iConfig):
 
 
   // AOD tokens
-  electronsToken_    = mayConsume<edm::View<reco::GsfElectron> >
+  electronsToken_    = mayConsume<edm::View<pat::Electron> >
     (iConfig.getParameter<edm::InputTag>
      ("electrons"));
 
@@ -231,7 +234,7 @@ SimpleElectronNtupler::SimpleElectronNtupler(const edm::ParameterSet& iConfig):
   // MiniAOD tokens
   // For electrons, use the fact that pat::Electron can be cast into 
   // GsfElectron
-  electronsMiniAODToken_    = mayConsume<edm::View<reco::GsfElectron> >
+  electronsMiniAODToken_    = mayConsume<edm::View<pat::Electron> >
     (iConfig.getParameter<edm::InputTag>
      ("electronsMiniAOD"));
 
@@ -281,6 +284,9 @@ SimpleElectronNtupler::SimpleElectronNtupler(const edm::ParameterSet& iConfig):
   electronTree_->Branch("isoPhotons"             , &isoPhotons_);
   electronTree_->Branch("relCombIsoWithEA"       , &relCombIsoWithEA_);
   electronTree_->Branch("isoChargedFromPU"       , &isoChargedFromPU_);
+  electronTree_->Branch("isoChargedHadronsPuppi"      , &isoChargedHadronsPuppi_);
+  electronTree_->Branch("isoNeutralHadronsPuppi"      , &isoNeutralHadronsPuppi_);
+  electronTree_->Branch("isoPhotonsPuppi"             , &isoPhotonsPuppi_);
   electronTree_->Branch("ooEmooP", &ooEmooP_);
   electronTree_->Branch("d0"     , &d0_);
   electronTree_->Branch("dz"     , &dz_);
@@ -363,14 +369,10 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   // If we fail to retrieve the collection with the standard AOD
   // name, we next look for the one with the stndard miniAOD name.
   //   We use exactly the same handle for AOD and miniAOD formats
-  // since pat::Electron objects can be recast as reco::GsfElectron objects.
-  edm::Handle<edm::View<reco::GsfElectron> > electrons;
-  bool isAOD = true;
-  iEvent.getByToken(electronsToken_, electrons);
-  if( !electrons.isValid() ){
-    isAOD = false;
-    iEvent.getByToken(electronsMiniAODToken_,electrons);
-  }
+  // since pat::Electron objects can be recast as pat::Electron objects.
+  edm::Handle<edm::View<pat::Electron> > electrons;
+  bool isAOD = false;
+  iEvent.getByToken(electronsMiniAODToken_,electrons);
   
   // Get the MC collection
   Handle<edm::View<reco::GenParticle> > genParticles;
@@ -429,8 +431,8 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   edm::Handle<edm::ValueMap<double> > trackIsoValueMap;
   iEvent.getByToken(trackIsoValueMapToken_, trackIsoValueMap);
 
-  hgcEmId_->getEventSetup(iSetup);
-  hgcEmId_->getEvent(iEvent);
+  //hgcEmId_->getEventSetup(iSetup);
+  //hgcEmId_->getEvent(iEvent);
 
   // Loop over electrons
   nElectrons_ = 0;
@@ -447,6 +449,9 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   isoPhotons_.clear();
   relCombIsoWithEA_.clear();
   isoChargedFromPU_.clear();
+  isoChargedHadronsPuppi_.clear();
+  isoNeutralHadronsPuppi_.clear();
+  isoPhotonsPuppi_.clear();
   ooEmooP_.clear();
   d0_.clear();
   dz_.clear();
@@ -505,7 +510,8 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     deltaPhiSuperClusterAtVtx.push_back( el->deltaPhiSuperClusterTrackAtVtx() );
     deltaPhiSeedClusterAtCalo.push_back( el->deltaPhiSeedClusterTrackAtCalo() );
 
-    bool isHGCal = hgcEmId_->setElectronPtr(&*el);
+    //bool isHGCal = hgcEmId_->setElectronPtr(&*el);
+    bool isHGCal = false;
     if ( isHGCal ) {
       hOverE_hgcalSafe_.push_back( hgcEmId_->getClusterHadronFraction() );
       hgcId_startPosition_.push_back( std::abs(hgcEmId_->getClusterStartPosition().z()) );
@@ -529,7 +535,7 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
       hgcId_cosTrackShowerAngle_.push_back( -1.);
     }
     
-    trackIsoR04jurassic_.push_back( (*trackIsoValueMap)[el] );
+    //trackIsoR04jurassic_.push_back( (*trackIsoValueMap)[el] );
 
     // ID and matching
     dEtaIn_.push_back( el->deltaEtaSuperClusterTrackAtVtx() );
@@ -566,6 +572,11 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     isoNeutralHadrons_.push_back( pfIso.sumNeutralHadronEt );
     isoPhotons_.push_back( pfIso.sumPhotonEt );
     isoChargedFromPU_.push_back( pfIso.sumPUPt );
+
+    // puppi from pat
+    isoChargedHadronsPuppi_.push_back( el->puppiChargedHadronIso() );
+    isoNeutralHadronsPuppi_.push_back( el->puppiNeutralHadronIso() );
+    isoPhotonsPuppi_.push_back( el->puppiPhotonIso() );
 
     // Compute combined relative PF isolation with the effective area correction for pile-up
     float abseta =  abs(el->superCluster()->eta());
@@ -655,7 +666,7 @@ SimpleElectronNtupler::fillDescriptions(edm::ConfigurationDescriptions& descript
   descriptions.addDefault(desc);
 }
 
-int SimpleElectronNtupler::matchToTruth(const edm::Ptr<reco::GsfElectron> el, 
+int SimpleElectronNtupler::matchToTruth(const edm::Ptr<pat::Electron> el, 
 				  const edm::Handle<edm::View<reco::GenParticle>> &prunedGenParticles){
 
   // 

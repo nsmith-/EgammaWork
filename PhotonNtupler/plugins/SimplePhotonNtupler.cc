@@ -258,6 +258,10 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     iEvent.getByToken(genParticlesToken_,genParticles);
   else
     iEvent.getByToken(genParticlesMiniAODToken_,genParticles);
+  for(auto p : *genParticles) {
+    if ( p.isHardProcess() and (std::abs(p.pdgId()) == 13 or std::abs(p.pdgId()) == 15) )
+      return;
+  }
 
   // Get rho
   edm::Handle< double > rhoH;

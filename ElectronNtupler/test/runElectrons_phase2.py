@@ -24,7 +24,7 @@ process.ntupler = cms.EDAnalyzer('SimpleElectronNtupler',
                                  #
                                  # Common to all formats objects
                                  #
-                                 pileup   = cms.InputTag("addPileupInfo"),
+                                 pileup   = cms.InputTag("slimmedAddPileupInfo"),
                                  rho      = cms.InputTag("fixedGridRhoFastjetAll"),
                                  beamSpot = cms.InputTag('offlineBeamSpot'),
                                  genEventInfoProduct = cms.InputTag('generator'),
@@ -61,4 +61,5 @@ process.TFileService = cms.Service("TFileService",
                                    )
 
 
-process.p = cms.Path(process.electronTrackIsolationLcone+process.particleFlowRecHitHGCSeq+process.ntupler)
+#process.p = cms.Path(process.electronTrackIsolationLcone+process.particleFlowRecHitHGCSeq+process.ntupler)
+process.p = cms.Path(process.ntupler)
