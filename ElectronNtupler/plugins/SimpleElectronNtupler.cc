@@ -94,19 +94,12 @@ class SimpleElectronNtupler : public edm::EDAnalyzer {
       edm::EDGetTokenT<reco::BeamSpot> beamSpotToken_;
       edm::EDGetTokenT<GenEventInfoProduct> genEventInfoProduct_;
 
-      // AOD case data members
-      edm::EDGetToken electronsToken_;
-      edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
-      edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticlesToken_;
-      edm::EDGetTokenT<reco::ConversionCollection> conversionsToken_;
-
       // MiniAOD case data members
       edm::EDGetToken electronsMiniAODToken_;
       edm::EDGetTokenT<reco::VertexCollection> vtxMiniAODToken_;
       edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticlesMiniAODToken_;
       edm::EDGetTokenT<reco::ConversionCollection> conversionsMiniAODToken_;
 
-      edm::EDGetTokenT<edm::ValueMap<double> > trackIsoValueMapToken_;
 
   TTree *electronTree_;
 
@@ -170,7 +163,14 @@ class SimpleElectronNtupler : public edm::EDAnalyzer {
   std::vector<float>   hgcId_deltaEtaStartPositionSimple_;
   std::vector<float>   hgcId_deltaPhiStartPositionSimple_;
   std::vector<float>   hgcId_cosTrackShowerAngle_;
-  std::vector<float>   trackIsoR04jurassic_;
+
+  // gen->reco match
+  int gtr_nGen_;
+  std::vector<float> gtr_gen_pt_;
+  std::vector<float> gtr_gen_eta_;
+  std::vector<float> gtr_gen_phi_;
+  std::vector<float> gtr_deltaR_;
+  std::vector<float> gtr_iReco_;
 
   EffectiveAreas   effectiveAreas_;
 
@@ -214,23 +214,6 @@ SimpleElectronNtupler::SimpleElectronNtupler(const edm::ParameterSet& iConfig):
      ("beamSpot"));
 
 
-  // AOD tokens
-  electronsToken_    = mayConsume<edm::View<pat::Electron> >
-    (iConfig.getParameter<edm::InputTag>
-     ("electrons"));
-
-  vtxToken_          = mayConsume<reco::VertexCollection>
-    (iConfig.getParameter<edm::InputTag>
-     ("vertices"));
-
-  genParticlesToken_ = mayConsume<edm::View<reco::GenParticle> >
-    (iConfig.getParameter<edm::InputTag>
-     ("genParticles"));
-
-  conversionsToken_ = mayConsume< reco::ConversionCollection >
-    (iConfig.getParameter<edm::InputTag>
-     ("conversions"));
-
   // MiniAOD tokens
   // For electrons, use the fact that pat::Electron can be cast into 
   // GsfElectron
@@ -250,11 +233,10 @@ SimpleElectronNtupler::SimpleElectronNtupler(const edm::ParameterSet& iConfig):
     (iConfig.getParameter<edm::InputTag>
      ("conversionsMiniAOD"));
 
-  trackIsoValueMapToken_ = consumes< edm::ValueMap<double> >(iConfig.getParameter<edm::InputTag>("trackIsoValueMap"));
 
-  const edm::ParameterSet& hgcIdCfg = iConfig.getParameterSet("HGCalIDToolConfig");
-  auto cc = consumesCollector();
-  hgcEmId_.reset( new HGCalIDTool(hgcIdCfg, cc) );
+  // const edm::ParameterSet& hgcIdCfg = iConfig.getParameterSet("HGCalIDToolConfig");
+  // auto cc = consumesCollector();
+  // hgcEmId_.reset( new HGCalIDTool(hgcIdCfg, cc) );
 
   //
   // Set up the ntuple structure
@@ -315,7 +297,13 @@ SimpleElectronNtupler::SimpleElectronNtupler(const edm::ParameterSet& iConfig):
   electronTree_->Branch("hgcId_deltaEtaStartPositionSimple", &hgcId_deltaEtaStartPositionSimple_);
   electronTree_->Branch("hgcId_deltaPhiStartPositionSimple", &hgcId_deltaPhiStartPositionSimple_);
   electronTree_->Branch("hgcId_cosTrackShowerAxisAngle", &hgcId_cosTrackShowerAngle_);
-  electronTree_->Branch("trackIsoR04jurassic", &trackIsoR04jurassic_);
+
+  electronTree_->Branch("nGen", &gtr_nGen_);
+  electronTree_->Branch("gen_pt", &gtr_gen_pt_);
+  electronTree_->Branch("gen_eta", &gtr_gen_eta_);
+  electronTree_->Branch("gen_phi", &gtr_gen_phi_);
+  electronTree_->Branch("gen_deltaR", &gtr_deltaR_);
+  electronTree_->Branch("gen_iReco", &gtr_iReco_);
  
 }
 
@@ -371,22 +359,15 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   //   We use exactly the same handle for AOD and miniAOD formats
   // since pat::Electron objects can be recast as pat::Electron objects.
   edm::Handle<edm::View<pat::Electron> > electrons;
-  bool isAOD = false;
   iEvent.getByToken(electronsMiniAODToken_,electrons);
   
   // Get the MC collection
   Handle<edm::View<reco::GenParticle> > genParticles;
-  if( isAOD )
-    iEvent.getByToken(genParticlesToken_,genParticles);
-  else
-    iEvent.getByToken(genParticlesMiniAODToken_,genParticles);
+  iEvent.getByToken(genParticlesMiniAODToken_,genParticles);
   
   // Get PV
   edm::Handle<reco::VertexCollection> vertices;
-  if( isAOD )
-    iEvent.getByToken(vtxToken_, vertices);
-  else
-    iEvent.getByToken(vtxMiniAODToken_, vertices);
+  iEvent.getByToken(vtxMiniAODToken_, vertices);
   
   if (vertices->empty()) return; // skip the event if no PV found
   const reco::Vertex &pv = vertices->front();
@@ -423,13 +404,7 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
 
   // Get the conversions collection
   edm::Handle<reco::ConversionCollection> conversions;
-  if(isAOD)
-    iEvent.getByToken(conversionsToken_, conversions);
-  else
-    iEvent.getByToken(conversionsMiniAODToken_, conversions);
-
-  edm::Handle<edm::ValueMap<double> > trackIsoValueMap;
-  iEvent.getByToken(trackIsoValueMapToken_, trackIsoValueMap);
+  iEvent.getByToken(conversionsMiniAODToken_, conversions);
 
   //hgcEmId_->getEventSetup(iSetup);
   //hgcEmId_->getEvent(iEvent);
@@ -480,7 +455,6 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   hgcId_deltaEtaStartPositionSimple_.clear();
   hgcId_deltaPhiStartPositionSimple_.clear();
   hgcId_cosTrackShowerAngle_.clear();
-  trackIsoR04jurassic_.clear();
 
   for (size_t i = 0; i < electrons->size(); ++i){
     const auto el = electrons->ptrAt(i);
@@ -535,7 +509,6 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
       hgcId_cosTrackShowerAngle_.push_back( -1.);
     }
     
-    //trackIsoR04jurassic_.push_back( (*trackIsoValueMap)[el] );
 
     // ID and matching
     dEtaIn_.push_back( el->deltaEtaSuperClusterTrackAtVtx() );
@@ -607,6 +580,33 @@ SimpleElectronNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     
   }
   
+  gtr_nGen_ = 0;
+  gtr_gen_pt_.clear();
+  gtr_gen_eta_.clear();
+  gtr_gen_phi_.clear();
+  gtr_deltaR_.clear();
+  gtr_iReco_.clear();
+  for(auto p : *genParticles) {
+    if ( std::abs(p.pdgId()) == 11 and p.isPromptFinalState() and p.pt() > 5. ) {
+      gtr_nGen_++;
+      gtr_gen_pt_.push_back(p.pt());
+      gtr_gen_eta_.push_back(p.eta());
+      gtr_gen_phi_.push_back(p.phi());
+
+      float minDr = 999.;
+      int ireco = -1;
+      for(int i=0; i<nElectrons_; ++i) {
+        float drTest = reco::deltaR(p.eta(), p.phi(), etaSC_[i], phiSC_[i]);
+        if ( drTest < minDr ) {
+          minDr = drTest;
+          ireco = i;
+        }
+      }
+      gtr_deltaR_.push_back(minDr);
+      gtr_iReco_.push_back(ireco);
+    }
+  }
+
   // Save this electron's info
   electronTree_->Fill();
 }
