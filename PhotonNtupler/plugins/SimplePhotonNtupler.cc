@@ -95,11 +95,6 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
   edm::EDGetToken photonsMiniAODToken_;
   edm::EDGetTokenT<edm::View<reco::GenParticle> > genParticlesMiniAODToken_;
   
-  // Photon variables computed upstream in a special producer
-  edm::EDGetTokenT<edm::ValueMap<float> > full5x5SigmaIEtaIEtaMapToken_; 
-  edm::EDGetTokenT<edm::ValueMap<float> > phoChargedIsolationToken_; 
-  edm::EDGetTokenT<edm::ValueMap<float> > phoNeutralHadronIsolationToken_; 
-  edm::EDGetTokenT<edm::ValueMap<float> > phoPhotonIsolationToken_; 
  
   TTree *photonTree_;
   Float_t rho_;      // the rho variable
@@ -133,6 +128,14 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
   std::vector<Int_t> isTrue_;
   std::vector<Float_t> gen_pt_;
 
+  // gen->reco match
+  int gtr_nGen_;
+  std::vector<float> gtr_gen_pt_;
+  std::vector<float> gtr_gen_eta_;
+  std::vector<float> gtr_gen_phi_;
+  std::vector<float> gtr_deltaR_;
+  std::vector<float> gtr_iReco_;
+
   // Effective area constants for all isolation types
   EffectiveAreas effAreaChHadrons_;
   EffectiveAreas effAreaNeuHadrons_;
@@ -153,16 +156,6 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
 //
 SimplePhotonNtupler::SimplePhotonNtupler(const edm::ParameterSet& iConfig):
   rhoToken_(consumes<double> (iConfig.getParameter<edm::InputTag>("rho"))),
-  // Cluster shapes
-  full5x5SigmaIEtaIEtaMapToken_(consumes <edm::ValueMap<float> >
-				(iConfig.getParameter<edm::InputTag>("full5x5SigmaIEtaIEtaMap"))),
-  // Isolations
-  phoChargedIsolationToken_(consumes <edm::ValueMap<float> >
-			    (iConfig.getParameter<edm::InputTag>("phoChargedIsolation"))),
-  phoNeutralHadronIsolationToken_(consumes <edm::ValueMap<float> >
-				  (iConfig.getParameter<edm::InputTag>("phoNeutralHadronIsolation"))),
-  phoPhotonIsolationToken_(consumes <edm::ValueMap<float> >
-			   (iConfig.getParameter<edm::InputTag>("phoPhotonIsolation"))),
   // Objects containing effective area constants
   effAreaChHadrons_( (iConfig.getParameter<edm::FileInPath>("effAreaChHadFile")).fullPath() ),
   effAreaNeuHadrons_( (iConfig.getParameter<edm::FileInPath>("effAreaNeuHadFile")).fullPath() ),
@@ -217,8 +210,13 @@ SimplePhotonNtupler::SimplePhotonNtupler(const edm::ParameterSet& iConfig):
   photonTree_->Branch("isoPhotonsPuppi"             , &isoPhotonsPuppi_);
 
   photonTree_->Branch("isTrue"             , &isTrue_);
-  photonTree_->Branch("gen_pt"             , &gen_pt_);
 
+  photonTree_->Branch("nGen", &gtr_nGen_);
+  photonTree_->Branch("gen_pt", &gtr_gen_pt_);
+  photonTree_->Branch("gen_eta", &gtr_gen_eta_);
+  photonTree_->Branch("gen_phi", &gtr_gen_phi_);
+  photonTree_->Branch("gen_deltaR", &gtr_deltaR_);
+  photonTree_->Branch("gen_iReco", &gtr_iReco_);
 }
 
 
@@ -258,27 +256,12 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     iEvent.getByToken(genParticlesToken_,genParticles);
   else
     iEvent.getByToken(genParticlesMiniAODToken_,genParticles);
-  for(auto p : *genParticles) {
-    if ( p.isHardProcess() and (std::abs(p.pdgId()) == 13 or std::abs(p.pdgId()) == 15) )
-      return;
-  }
 
   // Get rho
   edm::Handle< double > rhoH;
   iEvent.getByToken(rhoToken_,rhoH);
   rho_ = *rhoH;
 
-  // Get the full5x5 map
-  edm::Handle<edm::ValueMap<float> > full5x5SigmaIEtaIEtaMap;
-  iEvent.getByToken(full5x5SigmaIEtaIEtaMapToken_, full5x5SigmaIEtaIEtaMap);
-
-  // Get the isolation maps
-  edm::Handle<edm::ValueMap<float> > phoChargedIsolationMap;
-  iEvent.getByToken(phoChargedIsolationToken_, phoChargedIsolationMap);
-  edm::Handle<edm::ValueMap<float> > phoNeutralHadronIsolationMap;
-  iEvent.getByToken(phoNeutralHadronIsolationToken_, phoNeutralHadronIsolationMap);
-  edm::Handle<edm::ValueMap<float> > phoPhotonIsolationMap;
-  iEvent.getByToken(phoPhotonIsolationToken_, phoPhotonIsolationMap);
 
   // Clear vectors
   nPhotons_ = 0;
@@ -331,11 +314,11 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     // Note: starting from CMSSW 7.2.1 or so one can get any full5x5 quantity
     // directly from the photon object, there is no need for value maps anymore.
     // However 7.2.0 and prior (this includes PHYS14 MC samples) requires ValueMaps.
-    full5x5_sigmaIetaIeta_ .push_back( (*full5x5SigmaIEtaIEtaMap)[ pho ] );
+    full5x5_sigmaIetaIeta_ .push_back( pho->full5x5_sigmaIetaIeta() );
 
-    float chIso =  (*phoChargedIsolationMap)[pho];
-    float nhIso =  (*phoNeutralHadronIsolationMap)[pho];
-    float phIso = (*phoPhotonIsolationMap)[pho];
+    float chIso = pho->chargedHadronIso();
+    float nhIso = pho->neutralHadronIso();
+    float phIso = pho->photonIso();
     isoChargedHadrons_ .push_back( chIso );
     isoNeutralHadrons_ .push_back( nhIso );
     isoPhotons_        .push_back( phIso );
@@ -359,6 +342,33 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
 
    }
    
+  gtr_nGen_ = 0;
+  gtr_gen_pt_.clear();
+  gtr_gen_eta_.clear();
+  gtr_gen_phi_.clear();
+  gtr_deltaR_.clear();
+  gtr_iReco_.clear();
+  for(auto p : *genParticles) {
+    if ( p.pdgId() == 22 and p.isPromptFinalState() and p.pt() > 10. ) {
+      gtr_nGen_++;
+      gtr_gen_pt_.push_back(p.pt());
+      gtr_gen_eta_.push_back(p.eta());
+      gtr_gen_phi_.push_back(p.phi());
+
+      float minDr = 999.;
+      int ireco = -1;
+      for(int i=0; i<nPhotons_; ++i) {
+        float drTest = reco::deltaR(p.eta(), p.phi(), eta_[i], phi_[i]);
+        if ( drTest < minDr ) {
+          minDr = drTest;
+          ireco = i;
+        }
+      }
+      gtr_deltaR_.push_back(minDr);
+      gtr_iReco_.push_back(ireco);
+    }
+  }
+
   // Save the info
   photonTree_->Fill();
 

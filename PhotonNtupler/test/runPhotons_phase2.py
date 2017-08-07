@@ -17,9 +17,6 @@ process.source = cms.Source ("PoolSource", fileNames = cms.untracked.vstring(opt
 #
 # Configure the ntupler module
 #
-process.load("RecoEgamma/PhotonIdentification/PhotonIDValueMapProducer_cfi")
-process.photonIDValueMapProducer.esReducedRecHitCollection = cms.InputTag("")
-process.photonIDValueMapProducer.esReducedRecHitCollectionMiniAOD = cms.InputTag("")
 
 process.ntupler = cms.EDAnalyzer('SimplePhotonNtupler',
     # The module automatically detects AOD vs miniAOD, so we configure both
@@ -37,13 +34,6 @@ process.ntupler = cms.EDAnalyzer('SimplePhotonNtupler',
     #
     photonsMiniAOD = cms.InputTag("slimmedPhotons"),
     genParticlesMiniAOD = cms.InputTag("prunedGenParticles"),
-    #
-    # ValueMap names from the producer upstream
-    #
-    full5x5SigmaIEtaIEtaMap   = cms.InputTag("photonIDValueMapProducer:phoFull5x5SigmaIEtaIEta"),
-    phoChargedIsolation = cms.InputTag("photonIDValueMapProducer:phoChargedIsolation"),
-    phoNeutralHadronIsolation = cms.InputTag("photonIDValueMapProducer:phoNeutralHadronIsolation"),
-    phoPhotonIsolation = cms.InputTag("photonIDValueMapProducer:phoPhotonIsolation"),
     # 
     # Locations of files with the effective area constants.
     # The constants in these files below are derived for PHYS14 MC.
@@ -58,4 +48,4 @@ process.TFileService = cms.Service("TFileService",
                                    )
 
 
-process.p = cms.Path(process.photonIDValueMapProducer * process.ntupler)
+process.p = cms.Path(process.ntupler)
