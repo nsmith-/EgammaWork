@@ -3,6 +3,12 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 
 process = cms.Process("Ntupler")
 options = VarParsing('analysis')
+options.register('parentInputFiles',
+    '',
+    VarParsing.multiplicity.list,
+    VarParsing.varType.string,
+    "Parent files to process"
+)
 options.parseArguments()
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
@@ -14,7 +20,10 @@ process.GlobalTag = GlobalTag(process.GlobalTag, '91X_upgrade2023_realistic_v3',
 #process.load("RecoParticleFlow.PFClusterProducer.particleFlowRecHitHGC_cff")
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(options.maxEvents) )
-process.source = cms.Source ("PoolSource", fileNames = cms.untracked.vstring(options.inputFiles) )
+process.source = cms.Source ("PoolSource",
+    fileNames = cms.untracked.vstring(options.inputFiles),
+    secondaryFileNames = cms.untracked.vstring(options.parentInputFiles),
+)
 #
 # Configure the ntupler module
 #
@@ -41,7 +50,10 @@ process.ntupler = cms.EDAnalyzer('SimplePhotonNtupler',
     #
     effAreaChHadFile = cms.FileInPath("RecoEgamma/PhotonIdentification/data/Spring15/effAreaPhotons_cone03_pfChargedHadrons_25ns_NULLcorrection.txt"),
     effAreaNeuHadFile= cms.FileInPath("RecoEgamma/PhotonIdentification/data/Spring15/effAreaPhotons_cone03_pfNeutralHadrons_25ns_90percentBased.txt"),
-    effAreaPhoFile   = cms.FileInPath("RecoEgamma/PhotonIdentification/data/Spring15/effAreaPhotons_cone03_pfPhotons_25ns_90percentBased.txt")
+    effAreaPhoFile   = cms.FileInPath("RecoEgamma/PhotonIdentification/data/Spring15/effAreaPhotons_cone03_pfPhotons_25ns_90percentBased.txt"),
+    #
+    simTracksSrc = cms.InputTag("g4SimHits"),
+    simVerticesSrc = cms.InputTag("g4SimHits"),
 )
 
 process.TFileService = cms.Service("TFileService",

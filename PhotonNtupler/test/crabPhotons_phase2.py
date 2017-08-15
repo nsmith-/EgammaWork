@@ -11,6 +11,7 @@ config.JobType.psetName = 'runPhotons_phase2.py'
 config.Data.inputDBS = 'global'
 config.Data.splitting = 'FileBased'
 config.Data.unitsPerJob = 10
+config.Data.useParent = True
 config.Data.outLFNDirBase = '/store/user/%s/phase2photons' % (getUsernameFromSiteDB())
 config.Data.publication = False
 

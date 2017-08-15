@@ -47,6 +47,12 @@
 
 #include "RecoEgamma/EgammaTools/interface/EffectiveAreas.h"
 
+#include "SimDataFormats/Track/interface/SimTrack.h"
+#include "SimDataFormats/Vertex/interface/SimVertex.h"
+#include "RecoEgamma/EgammaMCTools/interface/ElectronMCTruth.h"
+#include "RecoEgamma/EgammaMCTools/interface/PhotonMCTruth.h"
+#include "RecoEgamma/EgammaMCTools/interface/PhotonMCTruthFinder.h"
+
 #include "TTree.h"
 #include "Math/VectorUtil.h"
 
@@ -145,6 +151,7 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
   std::vector<float> gtr_gen_eta_;
   std::vector<float> gtr_gen_phi_;
   std::vector<float> gtr_gen_energy_;
+  std::vector<bool>  gtr_gen_conversion_;
   std::vector<float> gtr_deltaR_;
   std::vector<float> gtr_iReco_;
 
@@ -152,6 +159,9 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
   EffectiveAreas effAreaChHadrons_;
   EffectiveAreas effAreaNeuHadrons_;
   EffectiveAreas effAreaPhotons_;
+
+  edm::EDGetTokenT<std::vector<SimTrack>> simTracksToken_;
+  edm::EDGetTokenT<std::vector<SimVertex>> simVerticesToken_;
 
 };
 
@@ -171,7 +181,9 @@ SimplePhotonNtupler::SimplePhotonNtupler(const edm::ParameterSet& iConfig):
   // Objects containing effective area constants
   effAreaChHadrons_( (iConfig.getParameter<edm::FileInPath>("effAreaChHadFile")).fullPath() ),
   effAreaNeuHadrons_( (iConfig.getParameter<edm::FileInPath>("effAreaNeuHadFile")).fullPath() ),
-  effAreaPhotons_( (iConfig.getParameter<edm::FileInPath>("effAreaPhoFile")).fullPath() )
+  effAreaPhotons_( (iConfig.getParameter<edm::FileInPath>("effAreaPhoFile")).fullPath() ),
+  simTracksToken_(consumes<std::vector<SimTrack>>(iConfig.getParameter<edm::InputTag>("simTracksSrc") ) ),
+  simVerticesToken_(consumes<std::vector<SimVertex>>(iConfig.getParameter<edm::InputTag>("simVerticesSrc") ) )
 {
 
   //
@@ -238,6 +250,7 @@ SimplePhotonNtupler::SimplePhotonNtupler(const edm::ParameterSet& iConfig):
   photonTree_->Branch("gen_eta", &gtr_gen_eta_);
   photonTree_->Branch("gen_phi", &gtr_gen_phi_);
   photonTree_->Branch("gen_energy", &gtr_gen_energy_);
+  photonTree_->Branch("gen_conversion", &gtr_gen_conversion_);
   photonTree_->Branch("gen_deltaR", &gtr_deltaR_);
   photonTree_->Branch("gen_iReco", &gtr_iReco_);
 }
@@ -285,6 +298,12 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   iEvent.getByToken(rhoToken_,rhoH);
   rho_ = *rhoH;
 
+  Handle<std::vector<SimTrack>> simTracks;
+  iEvent.getByToken(simTracksToken_ ,simTracks);
+  Handle<std::vector<SimVertex>> simVertices;
+  iEvent.getByToken(simVerticesToken_ ,simVertices);
+  std::unique_ptr<PhotonMCTruthFinder> thePhotonMCTruthFinder_(new PhotonMCTruthFinder());
+  std::vector<PhotonMCTruth> mcPhotons=thePhotonMCTruthFinder_->find(*simTracks,  *simVertices);
 
   // Clear vectors
   nPhotons_ = 0;
@@ -391,15 +410,30 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   gtr_gen_eta_.clear();
   gtr_gen_phi_.clear();
   gtr_gen_energy_.clear();
+  gtr_gen_conversion_.clear();
   gtr_deltaR_.clear();
   gtr_iReco_.clear();
-  for(auto p : *genParticles) {
+  for(const auto& p : *genParticles) {
     if ( p.pdgId() == 22 and p.isPromptFinalState() and p.pt() > 10. ) {
       gtr_nGen_++;
       gtr_gen_pt_.push_back(p.pt());
       gtr_gen_eta_.push_back(p.eta());
       gtr_gen_phi_.push_back(p.phi());
       gtr_gen_energy_.push_back(p.energy());
+
+      bool isConversion = false;
+      for(auto& pmc : mcPhotons) {
+        // auto simTrack = std::find_if(simTracks->begin(), simTracks->end(), [pmc](const SimTrack& t) { return t.trackId() == (size_t) pmc.trackId(); });
+        // size_t iGenPart = simTrack->genpartIndex();
+        // (but this is genParticles not prunedGenParticles)
+        // This is easier than the more correct alternative, first one is always initial G4 track
+        if ( reco::deltaR(pmc.fourMomentum(), p.p4()) < 0.001 ) {
+          // PhotonMCTruth::vertex() is the conversion vertex (not mother vertex)
+          isConversion = pmc.isAConversion() and pmc.vertex().perp() < 80.;
+          break;
+        }
+      }
+      gtr_gen_conversion_.push_back(isConversion);
 
       float minDr = 999.;
       int ireco = -1;
@@ -537,7 +571,7 @@ void SimplePhotonNtupler::findFirstNonPhotonMother(const reco::Candidate *partic
 
   // Is this the first non-photon parent? If yes, return, otherwise
   // go deeper into recursion
-  if( abs(particle->pdgId()) == 22 ){
+  if( abs(particle->pdgId()) == 22 and particle->numberOfMothers() > 0 ){
     findFirstNonPhotonMother(particle->mother(0), ancestorPID, ancestorStatus);
   }else{
     ancestorPID = particle->pdgId();

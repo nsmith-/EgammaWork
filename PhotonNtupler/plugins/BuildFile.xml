@@ -4,4 +4,5 @@
 <use name="CommonTools/UtilAlgos"/>
 <use name="DataFormats/PatCandidates" />
 <use name="RecoEgamma/EgammaTools" />
+<use name="RecoEgamma/EgammaMCTools" />
 <flags EDM_PLUGIN="1"/>
