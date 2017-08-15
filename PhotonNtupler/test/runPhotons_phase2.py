@@ -54,6 +54,7 @@ process.ntupler = cms.EDAnalyzer('SimplePhotonNtupler',
     #
     simTracksSrc = cms.InputTag("g4SimHits"),
     simVerticesSrc = cms.InputTag("g4SimHits"),
+    ecalRecHits = cms.InputTag("ecalRecHit:EcalRecHitsEB"),
 )
 
 process.TFileService = cms.Service("TFileService",

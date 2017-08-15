@@ -53,6 +53,9 @@
 #include "RecoEgamma/EgammaMCTools/interface/PhotonMCTruth.h"
 #include "RecoEgamma/EgammaMCTools/interface/PhotonMCTruthFinder.h"
 
+#include "DataFormats/EcalRecHit/interface/EcalRecHit.h"
+#include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
+
 #include "TTree.h"
 #include "Math/VectorUtil.h"
 
@@ -123,6 +126,13 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
   std::vector<Float_t> full5x5_e3x3_;
   std::vector<Float_t> full5x5_e5x5_;
 
+  // Sacha energies
+  std::vector<Float_t> energy_nmax12_;
+  std::vector<Float_t> energy_nmax15_;
+  std::vector<Float_t> energy_check_;
+  std::vector<Float_t> cluster_nCells_;
+  std::vector<Float_t> cluster_nCellsEffective_;
+
   // Variables typically used for cut based photon ID
   std::vector<Float_t> full5x5_sigmaIetaIeta_;
   std::vector<Float_t> r9_;
@@ -162,6 +172,7 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
 
   edm::EDGetTokenT<std::vector<SimTrack>> simTracksToken_;
   edm::EDGetTokenT<std::vector<SimVertex>> simVerticesToken_;
+  edm::EDGetTokenT<EcalRecHitCollection> ecalRecHitsToken_;
 
 };
 
@@ -183,7 +194,8 @@ SimplePhotonNtupler::SimplePhotonNtupler(const edm::ParameterSet& iConfig):
   effAreaNeuHadrons_( (iConfig.getParameter<edm::FileInPath>("effAreaNeuHadFile")).fullPath() ),
   effAreaPhotons_( (iConfig.getParameter<edm::FileInPath>("effAreaPhoFile")).fullPath() ),
   simTracksToken_(consumes<std::vector<SimTrack>>(iConfig.getParameter<edm::InputTag>("simTracksSrc") ) ),
-  simVerticesToken_(consumes<std::vector<SimVertex>>(iConfig.getParameter<edm::InputTag>("simVerticesSrc") ) )
+  simVerticesToken_(consumes<std::vector<SimVertex>>(iConfig.getParameter<edm::InputTag>("simVerticesSrc") ) ),
+  ecalRecHitsToken_(consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("ecalRecHits") ) )
 {
 
   //
@@ -223,6 +235,12 @@ SimplePhotonNtupler::SimplePhotonNtupler(const edm::ParameterSet& iConfig):
   photonTree_->Branch("e5x5", &e5x5_);
   photonTree_->Branch("full5x5_e3x3", &full5x5_e3x3_);
   photonTree_->Branch("full5x5_e5x5", &full5x5_e5x5_);
+
+  photonTree_->Branch("energy_nmax12", &energy_nmax12_);
+  photonTree_->Branch("energy_nmax15", &energy_nmax15_);
+  photonTree_->Branch("energy_check", &energy_check_);
+  photonTree_->Branch("cluster_nCells", &cluster_nCells_);
+  photonTree_->Branch("cluster_nCellsEffective", &cluster_nCellsEffective_);
 
   // Variables typically used for cut based photon ID
   photonTree_->Branch("full5x5_sigmaIetaIeta"  , &full5x5_sigmaIetaIeta_);
@@ -305,6 +323,9 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   std::unique_ptr<PhotonMCTruthFinder> thePhotonMCTruthFinder_(new PhotonMCTruthFinder());
   std::vector<PhotonMCTruth> mcPhotons=thePhotonMCTruthFinder_->find(*simTracks,  *simVertices);
 
+  Handle<EcalRecHitCollection> ecalRecHits;
+  iEvent.getByToken(ecalRecHitsToken_, ecalRecHits);
+
   // Clear vectors
   nPhotons_ = 0;
   pt_.clear();
@@ -319,6 +340,12 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   e5x5_.clear();
   full5x5_e3x3_.clear();
   full5x5_e5x5_.clear();
+
+  energy_nmax12_.clear();
+  energy_nmax15_.clear();
+  energy_check_.clear();
+  cluster_nCells_.clear();
+  cluster_nCellsEffective_.clear();
 
   //
   full5x5_sigmaIetaIeta_.clear();
@@ -367,6 +394,39 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     e5x5_.push_back( pho->e5x5() );
     full5x5_e3x3_.push_back( pho->full5x5_e3x3() );
     full5x5_e5x5_.push_back( pho->full5x5_e5x5() );
+
+    std::vector<double> cells;
+    double nCellsEffective{0.};
+    for( auto&& detid_frac : pho->superCluster()->hitsAndFractions() ) {
+      auto hit = ecalRecHits->find(detid_frac.first);
+      if ( hit == ecalRecHits->end() and detid_frac.first.subdetId() == DetId::Ecal ) {
+        std::cout << "uh oh" << std::endl;
+        continue;
+      }
+      double frac = detid_frac.second;
+      cells.push_back(hit->energy() * frac);
+      nCellsEffective += frac;
+    }
+    std::sort(cells.begin(), cells.end());
+
+    double energy_nmax12{0.};
+    double energy_nmax15{0.};
+    double energy_check{0.};
+    size_t nCells{0u};
+    for(auto it=cells.rbegin(); it!=cells.rend(); ++it) {
+      if ( nCells < 12 ) energy_nmax12 += *it;
+      else if ( nCells < 15 ) energy_nmax15 += *it;
+      energy_check += *it;
+      // stop counting after some threshold?
+      // if ( *it < 0.1 ) break;
+      nCells++;
+    }
+
+    energy_nmax12_.push_back( energy_nmax12 );
+    energy_nmax15_.push_back( energy_nmax15 );
+    energy_check_.push_back( energy_check ); // should equal raw_sc_energy
+    cluster_nCellsEffective_.push_back( nCellsEffective );
+    cluster_nCells_.push_back( nCells );
 
     hOverE_                .push_back( pho->hadTowOverEm() );
     hasPixelSeed_          .push_back( (Int_t)pho->hasPixelSeed() );
