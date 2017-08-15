@@ -161,7 +161,7 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
   std::vector<float> gtr_gen_eta_;
   std::vector<float> gtr_gen_phi_;
   std::vector<float> gtr_gen_energy_;
-  std::vector<bool>  gtr_gen_conversion_;
+  std::vector<float>  gtr_gen_conversionRho_;
   std::vector<float> gtr_deltaR_;
   std::vector<float> gtr_iReco_;
 
@@ -268,7 +268,7 @@ SimplePhotonNtupler::SimplePhotonNtupler(const edm::ParameterSet& iConfig):
   photonTree_->Branch("gen_eta", &gtr_gen_eta_);
   photonTree_->Branch("gen_phi", &gtr_gen_phi_);
   photonTree_->Branch("gen_energy", &gtr_gen_energy_);
-  photonTree_->Branch("gen_conversion", &gtr_gen_conversion_);
+  photonTree_->Branch("gen_conversionRho", &gtr_gen_conversionRho_);
   photonTree_->Branch("gen_deltaR", &gtr_deltaR_);
   photonTree_->Branch("gen_iReco", &gtr_iReco_);
 }
@@ -415,7 +415,7 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     size_t nCells{0u};
     for(auto it=cells.rbegin(); it!=cells.rend(); ++it) {
       if ( nCells < 12 ) energy_nmax12 += *it;
-      else if ( nCells < 15 ) energy_nmax15 += *it;
+      if ( nCells < 15 ) energy_nmax15 += *it;
       energy_check += *it;
       // stop counting after some threshold?
       // if ( *it < 0.1 ) break;
@@ -470,7 +470,7 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   gtr_gen_eta_.clear();
   gtr_gen_phi_.clear();
   gtr_gen_energy_.clear();
-  gtr_gen_conversion_.clear();
+  gtr_gen_conversionRho_.clear();
   gtr_deltaR_.clear();
   gtr_iReco_.clear();
   for(const auto& p : *genParticles) {
@@ -481,7 +481,7 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
       gtr_gen_phi_.push_back(p.phi());
       gtr_gen_energy_.push_back(p.energy());
 
-      bool isConversion = false;
+      float conversionRho = 0.;
       for(auto& pmc : mcPhotons) {
         // auto simTrack = std::find_if(simTracks->begin(), simTracks->end(), [pmc](const SimTrack& t) { return t.trackId() == (size_t) pmc.trackId(); });
         // size_t iGenPart = simTrack->genpartIndex();
@@ -489,11 +489,14 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
         // This is easier than the more correct alternative, first one is always initial G4 track
         if ( reco::deltaR(pmc.fourMomentum(), p.p4()) < 0.001 ) {
           // PhotonMCTruth::vertex() is the conversion vertex (not mother vertex)
-          isConversion = pmc.isAConversion() and pmc.vertex().perp() < 80.;
+          // So the first one will always have isAConversion() true, but where it
+          // interacted tells us if it matters, since all photons will at least interact
+          // by the time they hit ECAL
+          conversionRho = pmc.vertex().perp();
           break;
         }
       }
-      gtr_gen_conversion_.push_back(isConversion);
+      gtr_gen_conversionRho_.push_back(conversionRho);
 
       float minDr = 999.;
       int ireco = -1;
