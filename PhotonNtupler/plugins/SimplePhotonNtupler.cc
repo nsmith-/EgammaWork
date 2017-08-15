@@ -20,6 +20,7 @@
 // system include files
 #include <memory>
 #include <vector>
+#include <map>
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -131,6 +132,7 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
   std::vector<Float_t> energy_nmax15_;
   std::vector<Float_t> energy_check_;
   std::vector<Float_t> cluster_nCells_;
+  std::vector<Float_t> cluster_nCellsOverlap_;
   std::vector<Float_t> cluster_nCellsEffective_;
 
   // Variables typically used for cut based photon ID
@@ -240,6 +242,7 @@ SimplePhotonNtupler::SimplePhotonNtupler(const edm::ParameterSet& iConfig):
   photonTree_->Branch("energy_nmax15", &energy_nmax15_);
   photonTree_->Branch("energy_check", &energy_check_);
   photonTree_->Branch("cluster_nCells", &cluster_nCells_);
+  photonTree_->Branch("cluster_nCellsOverlap", &cluster_nCellsOverlap_);
   photonTree_->Branch("cluster_nCellsEffective", &cluster_nCellsEffective_);
 
   // Variables typically used for cut based photon ID
@@ -345,6 +348,7 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   energy_nmax15_.clear();
   energy_check_.clear();
   cluster_nCells_.clear();
+  cluster_nCellsOverlap_.clear();
   cluster_nCellsEffective_.clear();
 
   //
@@ -395,7 +399,8 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     full5x5_e3x3_.push_back( pho->full5x5_e3x3() );
     full5x5_e5x5_.push_back( pho->full5x5_e5x5() );
 
-    std::vector<double> cells;
+    // Build map of unique crystals to their total energy used in supercluster
+    std::map<DetId, double> unique_cells;
     double nCellsEffective{0.};
     for( auto&& detid_frac : pho->superCluster()->hitsAndFractions() ) {
       auto hit = ecalRecHits->find(detid_frac.first);
@@ -404,11 +409,20 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
         continue;
       }
       double frac = detid_frac.second;
-      cells.push_back(hit->energy() * frac);
+      unique_cells[detid_frac.first] += hit->energy() * frac;
       nCellsEffective += frac;
+    }
+
+    // Copy map to vector and sort
+    std::vector<double> cells;
+    for( auto&& det_e : unique_cells ) {
+      // Here, if we had simHits, we could adjust the corresponding
+      // reco hit to have reduced ECAL noise
+      cells.push_back(det_e.second);
     }
     std::sort(cells.begin(), cells.end());
 
+    // Sum top N crystals
     double energy_nmax12{0.};
     double energy_nmax15{0.};
     double energy_check{0.};
@@ -426,7 +440,8 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     energy_nmax15_.push_back( energy_nmax15 );
     energy_check_.push_back( energy_check ); // should equal raw_sc_energy
     cluster_nCellsEffective_.push_back( nCellsEffective );
-    cluster_nCells_.push_back( nCells );
+    cluster_nCells_.push_back( unique_cells.size() );
+    cluster_nCellsOverlap_.push_back( pho->superCluster()->hitsAndFractions().size() - unique_cells.size() );
 
     hOverE_                .push_back( pho->hadTowOverEm() );
     hasPixelSeed_          .push_back( (Int_t)pho->hasPixelSeed() );
