@@ -39,4 +39,4 @@ if __name__ == '__main__':
         config.General.requestName = 'phase2electrons_%d_%s' % (i, primaryDS)
         config.Data.outputDatasetTag = conditions
         config.Data.inputDataset = pd
-        submit(config)
+        #submit(config)

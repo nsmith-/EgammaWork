@@ -6,6 +6,7 @@ options = VarParsing('analysis')
 options.parseArguments()
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 process.load('Configuration.Geometry.GeometryExtended2023D4Reco_cff')
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 from Configuration.AlCa.GlobalTag import GlobalTag

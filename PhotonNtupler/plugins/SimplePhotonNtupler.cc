@@ -106,9 +106,20 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
   std::vector<Float_t> pt_;
   std::vector<Float_t> eta_;
   std::vector<Float_t> phi_;
+  std::vector<Float_t> energy_;
+  
+  // Energies
+  std::vector<Float_t> energy_photons_;
+  std::vector<Float_t> sc_energy_;
+  std::vector<Float_t> raw_sc_energy_;
+  std::vector<Float_t> e3x3_;
+  std::vector<Float_t> e5x5_;
+  std::vector<Float_t> full5x5_e3x3_;
+  std::vector<Float_t> full5x5_e5x5_;
 
   // Variables typically used for cut based photon ID
   std::vector<Float_t> full5x5_sigmaIetaIeta_;
+  std::vector<Float_t> r9_;
   std::vector<Float_t> hOverE_;
   std::vector<Int_t> hasPixelSeed_;
   std::vector<Int_t> conversionSafeElectronVeto_;
@@ -133,6 +144,7 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
   std::vector<float> gtr_gen_pt_;
   std::vector<float> gtr_gen_eta_;
   std::vector<float> gtr_gen_phi_;
+  std::vector<float> gtr_gen_energy_;
   std::vector<float> gtr_deltaR_;
   std::vector<float> gtr_iReco_;
 
@@ -190,9 +202,19 @@ SimplePhotonNtupler::SimplePhotonNtupler(const edm::ParameterSet& iConfig):
   photonTree_->Branch("pt"  ,  &pt_    );
   photonTree_->Branch("eta" ,  &eta_ );
   photonTree_->Branch("phi" ,  &phi_ );
+  photonTree_->Branch("energy" ,  &energy_ );
+
+  photonTree_->Branch("energy_photons", &energy_photons_);
+  photonTree_->Branch("sc_energy", &sc_energy_);
+  photonTree_->Branch("raw_sc_energy", &raw_sc_energy_);
+  photonTree_->Branch("e3x3", &e3x3_);
+  photonTree_->Branch("e5x5", &e5x5_);
+  photonTree_->Branch("full5x5_e3x3", &full5x5_e3x3_);
+  photonTree_->Branch("full5x5_e5x5", &full5x5_e5x5_);
 
   // Variables typically used for cut based photon ID
   photonTree_->Branch("full5x5_sigmaIetaIeta"  , &full5x5_sigmaIetaIeta_);
+  photonTree_->Branch("r9"  , &r9_);
   photonTree_->Branch("hOverE"                 ,  &hOverE_);
   photonTree_->Branch("hasPixelSeed"           ,  &hasPixelSeed_);
   photonTree_->Branch("conversionSafeElectronVeto"           ,  &conversionSafeElectronVeto_);
@@ -215,6 +237,7 @@ SimplePhotonNtupler::SimplePhotonNtupler(const edm::ParameterSet& iConfig):
   photonTree_->Branch("gen_pt", &gtr_gen_pt_);
   photonTree_->Branch("gen_eta", &gtr_gen_eta_);
   photonTree_->Branch("gen_phi", &gtr_gen_phi_);
+  photonTree_->Branch("gen_energy", &gtr_gen_energy_);
   photonTree_->Branch("gen_deltaR", &gtr_deltaR_);
   photonTree_->Branch("gen_iReco", &gtr_iReco_);
 }
@@ -268,8 +291,19 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   pt_.clear();
   eta_.clear();
   phi_.clear();
+  energy_.clear();
+
+  energy_photons_.clear();
+  sc_energy_.clear();
+  raw_sc_energy_.clear();
+  e3x3_.clear();
+  e5x5_.clear();
+  full5x5_e3x3_.clear();
+  full5x5_e5x5_.clear();
+
   //
   full5x5_sigmaIetaIeta_.clear();
+  r9_.clear();
   hOverE_.clear();
   hasPixelSeed_.clear();
   conversionSafeElectronVeto_.clear();
@@ -305,6 +339,15 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     pt_  .push_back( pho->pt() );
     eta_ .push_back( pho->superCluster()->eta() );
     phi_ .push_back( pho->superCluster()->phi() );
+    energy_ .push_back( pho->energy() );
+
+    energy_photons_.push_back( pho->p4(pat::Photon::ecal_photons).energy() );
+    sc_energy_.push_back( pho->superCluster()->energy() );
+    raw_sc_energy_.push_back( pho->superCluster()->rawEnergy() );
+    e3x3_.push_back( pho->e3x3() );
+    e5x5_.push_back( pho->e5x5() );
+    full5x5_e3x3_.push_back( pho->full5x5_e3x3() );
+    full5x5_e5x5_.push_back( pho->full5x5_e5x5() );
 
     hOverE_                .push_back( pho->hadTowOverEm() );
     hasPixelSeed_          .push_back( (Int_t)pho->hasPixelSeed() );
@@ -315,6 +358,7 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     // directly from the photon object, there is no need for value maps anymore.
     // However 7.2.0 and prior (this includes PHYS14 MC samples) requires ValueMaps.
     full5x5_sigmaIetaIeta_ .push_back( pho->full5x5_sigmaIetaIeta() );
+    r9_.push_back( pho->r9() );
 
     float chIso = pho->chargedHadronIso();
     float nhIso = pho->neutralHadronIso();
@@ -346,6 +390,7 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   gtr_gen_pt_.clear();
   gtr_gen_eta_.clear();
   gtr_gen_phi_.clear();
+  gtr_gen_energy_.clear();
   gtr_deltaR_.clear();
   gtr_iReco_.clear();
   for(auto p : *genParticles) {
@@ -354,6 +399,7 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
       gtr_gen_pt_.push_back(p.pt());
       gtr_gen_eta_.push_back(p.eta());
       gtr_gen_phi_.push_back(p.phi());
+      gtr_gen_energy_.push_back(p.energy());
 
       float minDr = 999.;
       int ireco = -1;

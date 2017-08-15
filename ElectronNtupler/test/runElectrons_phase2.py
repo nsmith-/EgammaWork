@@ -6,6 +6,7 @@ options = VarParsing('analysis')
 options.parseArguments()
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 process.load('Configuration.Geometry.GeometryExtended2023D4Reco_cff')
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(options.maxEvents) )
