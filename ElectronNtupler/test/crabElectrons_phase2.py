@@ -14,11 +14,18 @@ config.Data.unitsPerJob = 10
 config.Data.outLFNDirBase = '/store/user/%s/phase2electrons' % (getUsernameFromSiteDB())
 config.Data.publication = False
 
-config.Site.storageSite = 'T2_US_Wisconsin'
+#config.Site.storageSite = 'T2_US_Wisconsin'
+config.Site.storageSite = 'T2_CH_CERN'
 
 pds = [
-    '/TTTo2L2Nu_TuneCUETP8M1_14TeV-powheg-pythia8/PhaseIITDRSpring17MiniAOD-PU200_91X_upgrade2023_realistic_v3-v3/MINIAODSIM',
-    '/DYJetsToLL_M-10to50_TuneCUETP8M1_14TeV-madgraphMLM-pythia8/PhaseIITDRSpring17MiniAOD-PU200_91X_upgrade2023_realistic_v3-v3/MINIAODSIM',
+    #'/DoubleElectron_FlatPt-1To300/PhaseIITDRSpring17MiniAOD-PU200CalAging300NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
+    #'/DoubleElectron_FlatPt-1To300/PhaseIITDRSpring17MiniAOD-PU200CalAging1000NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
+    #'/DoubleElectron_FlatPt-1To300/PhaseIITDRSpring17MiniAOD-PU200CalAging3000NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
+    #'/DoubleElectron_FlatPt-1To300/PhaseIITDRSpring17MiniAOD-PU200CalAging4500UltimateNewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
+    '/DoubleElectron_FlatPt-1To300/PhaseIITDRSpring17MiniAOD-noPUCaloAging300NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
+    '/DoubleElectron_FlatPt-1To300/PhaseIITDRSpring17MiniAOD-noPUCaloAging1000NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
+    '/DoubleElectron_FlatPt-1To300/PhaseIITDRSpring17MiniAOD-noPUCaloAging3000NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
+    '/DoubleElectron_FlatPt-1To300/PhaseIITDRSpring17MiniAOD-noPUCaloAging4500UltimateNewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
 ]
 
 if __name__ == '__main__':
@@ -36,7 +43,7 @@ if __name__ == '__main__':
 
     for i, pd in enumerate(pds):
         (_, primaryDS, conditions, dataTier) = pd.split('/')
-        config.General.requestName = 'phase2electrons_%d_%s' % (i, primaryDS)
+        config.General.requestName = 'p2electronsPU0_%d_%s' % (i, primaryDS)
         config.Data.outputDatasetTag = conditions
         config.Data.inputDataset = pd
-        #submit(config)
+        submit(config)

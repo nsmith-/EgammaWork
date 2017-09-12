@@ -137,6 +137,9 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
 
   // Variables typically used for cut based photon ID
   std::vector<Float_t> full5x5_sigmaIetaIeta_;
+  std::vector<Float_t> full5x5_sigmaEtaEta_;
+  std::vector<Float_t> sigmaIetaIeta_;
+  std::vector<Float_t> sigmaEtaEta_;
   std::vector<Float_t> r9_;
   std::vector<Float_t> hOverE_;
   std::vector<Int_t> hasPixelSeed_;
@@ -247,6 +250,9 @@ SimplePhotonNtupler::SimplePhotonNtupler(const edm::ParameterSet& iConfig):
 
   // Variables typically used for cut based photon ID
   photonTree_->Branch("full5x5_sigmaIetaIeta"  , &full5x5_sigmaIetaIeta_);
+  photonTree_->Branch("full5x5_sigmaEtaEta"  , &full5x5_sigmaEtaEta_);
+  photonTree_->Branch("sigmaIetaIeta"  , &sigmaIetaIeta_);
+  photonTree_->Branch("sigmaEtaEta"  ,   &sigmaEtaEta_);
   photonTree_->Branch("r9"  , &r9_);
   photonTree_->Branch("hOverE"                 ,  &hOverE_);
   photonTree_->Branch("hasPixelSeed"           ,  &hasPixelSeed_);
@@ -324,7 +330,10 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   Handle<std::vector<SimVertex>> simVertices;
   iEvent.getByToken(simVerticesToken_ ,simVertices);
   std::unique_ptr<PhotonMCTruthFinder> thePhotonMCTruthFinder_(new PhotonMCTruthFinder());
-  std::vector<PhotonMCTruth> mcPhotons=thePhotonMCTruthFinder_->find(*simTracks,  *simVertices);
+  std::vector<PhotonMCTruth> mcPhotons;
+  if ( true ) {
+    mcPhotons = thePhotonMCTruthFinder_->find(*simTracks,  *simVertices);
+  }
 
   Handle<EcalRecHitCollection> ecalRecHits;
   iEvent.getByToken(ecalRecHitsToken_, ecalRecHits);
@@ -353,6 +362,9 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
 
   //
   full5x5_sigmaIetaIeta_.clear();
+  full5x5_sigmaEtaEta_.clear();
+  sigmaIetaIeta_.clear();
+  sigmaEtaEta_.clear();
   r9_.clear();
   hOverE_.clear();
   hasPixelSeed_.clear();
@@ -405,7 +417,10 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     for( auto&& detid_frac : pho->superCluster()->hitsAndFractions() ) {
       auto hit = ecalRecHits->find(detid_frac.first);
       if ( hit == ecalRecHits->end() and detid_frac.first.subdetId() == DetId::Ecal ) {
-        std::cout << "uh oh" << std::endl;
+        std::cout << "uh oh, missing a hit" << std::endl;
+        continue;
+      }
+      else if ( hit == ecalRecHits->end() ) {
         continue;
       }
       double frac = detid_frac.second;
@@ -452,6 +467,9 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     // directly from the photon object, there is no need for value maps anymore.
     // However 7.2.0 and prior (this includes PHYS14 MC samples) requires ValueMaps.
     full5x5_sigmaIetaIeta_ .push_back( pho->full5x5_sigmaIetaIeta() );
+    full5x5_sigmaEtaEta_ .push_back( pho->full5x5_sigmaEtaEta() );
+    sigmaIetaIeta_ .push_back( pho->sigmaIetaIeta() );
+    sigmaEtaEta_ .push_back(   pho->sigmaEtaEta() );
     r9_.push_back( pho->r9() );
 
     float chIso = pho->chargedHadronIso();
