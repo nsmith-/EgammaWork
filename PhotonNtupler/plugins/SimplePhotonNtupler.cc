@@ -137,6 +137,8 @@ class SimplePhotonNtupler : public edm::EDAnalyzer {
 
   // Variables typically used for cut based photon ID
   std::vector<Float_t> full5x5_sigmaIetaIeta_;
+  std::vector<Float_t> full5x5_sigmaIetaIphi_;
+  std::vector<Float_t> full5x5_sigmaIphiIphi_;
   std::vector<Float_t> full5x5_sigmaEtaEta_;
   std::vector<Float_t> sigmaIetaIeta_;
   std::vector<Float_t> sigmaEtaEta_;
@@ -250,6 +252,8 @@ SimplePhotonNtupler::SimplePhotonNtupler(const edm::ParameterSet& iConfig):
 
   // Variables typically used for cut based photon ID
   photonTree_->Branch("full5x5_sigmaIetaIeta"  , &full5x5_sigmaIetaIeta_);
+  photonTree_->Branch("full5x5_sigmaIetaIphi"  , &full5x5_sigmaIetaIphi_);
+  photonTree_->Branch("full5x5_sigmaIphiIphi"  , &full5x5_sigmaIphiIphi_);
   photonTree_->Branch("full5x5_sigmaEtaEta"  , &full5x5_sigmaEtaEta_);
   photonTree_->Branch("sigmaIetaIeta"  , &sigmaIetaIeta_);
   photonTree_->Branch("sigmaEtaEta"  ,   &sigmaEtaEta_);
@@ -362,6 +366,8 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
 
   //
   full5x5_sigmaIetaIeta_.clear();
+  full5x5_sigmaIetaIphi_.clear();
+  full5x5_sigmaIphiIphi_.clear();
   full5x5_sigmaEtaEta_.clear();
   sigmaIetaIeta_.clear();
   sigmaEtaEta_.clear();
@@ -467,6 +473,8 @@ SimplePhotonNtupler::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     // directly from the photon object, there is no need for value maps anymore.
     // However 7.2.0 and prior (this includes PHYS14 MC samples) requires ValueMaps.
     full5x5_sigmaIetaIeta_ .push_back( pho->full5x5_sigmaIetaIeta() );
+    full5x5_sigmaIetaIphi_ .push_back( pho->full5x5_showerShapeVariables().sigmaIetaIphi );
+    full5x5_sigmaIphiIphi_ .push_back( pho->full5x5_showerShapeVariables().sigmaIphiIphi );
     full5x5_sigmaEtaEta_ .push_back( pho->full5x5_sigmaEtaEta() );
     sigmaIetaIeta_ .push_back( pho->sigmaIetaIeta() );
     sigmaEtaEta_ .push_back(   pho->sigmaEtaEta() );

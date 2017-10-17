@@ -20,7 +20,7 @@ config.Data.totalUnits = 20
 config.Site.storageSite = 'T2_CH_CERN'
 
 # 7 pt * 3 pu * 4 aging = 84
-pds = [
+pds_singlepho = [
     '/SinglePhoton_Pt-20/PhaseIITDRSpring17MiniAOD-PU140CaloAging1000NewCT_NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
     '/SinglePhoton_Pt-20/PhaseIITDRSpring17MiniAOD-PU140CaloAging3000NewCT_NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
     '/SinglePhoton_Pt-20/PhaseIITDRSpring17MiniAOD-PU140CaloAging300NewCT_NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
@@ -107,28 +107,28 @@ pds = [
     '/SinglePhoton_Pt-2000/PhaseIITDRSpring17MiniAOD-noPUCaloAging4500UltimateNewCT_NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
 ]
 
-pds = [
+pds_gjets = [
     # 4(+1 ext) aging * 2 pu * 3 phase-space
-    '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200CaloAging3000NewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
-    '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200CaloAging300NewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
-    '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200CaloAging4500UltimateNewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
-    '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200NewCT_91X_upgrade2023_realistic_v3_ext1-v1/MINIAODSIM',
-    '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200NewCT_NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
-    '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUCaloAging3000NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
-    '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUCaloAging300NewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
-    '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUCaloAging4500UltimateNewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
-    '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUNewCT_91X_upgrade2023_realistic_v3_ext1-v1/MINIAODSIM',
-    '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUNewCT_NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
-    '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200CaloAging3000NewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
-    '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200CaloAging300NewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
-    '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200CaloAging4500UltimateNewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
-    '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200NewCT_91X_upgrade2023_realistic_v3_ext1-v1/MINIAODSIM',
-    '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200NewCT_NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
-    '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUCaloAging3000NewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
-    '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUCaloAging300NewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
-    '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUCaloAging4500UltimateNewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
-    '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUNewCT_91X_upgrade2023_realistic_v3_ext1-v1/MINIAODSIM',
-    '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUNewCT_NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
+    # '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200CaloAging3000NewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
+    # '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200CaloAging300NewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
+    # '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200CaloAging4500UltimateNewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
+    # '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200NewCT_91X_upgrade2023_realistic_v3_ext1-v1/MINIAODSIM',
+    # '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200NewCT_NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
+    # '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUCaloAging3000NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
+    # '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUCaloAging300NewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
+    # '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUCaloAging4500UltimateNewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
+    # '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUNewCT_91X_upgrade2023_realistic_v3_ext1-v1/MINIAODSIM',
+    # '/GJet_Pt-20to40_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUNewCT_NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
+    # '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200CaloAging3000NewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
+    # '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200CaloAging300NewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
+    # '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200CaloAging4500UltimateNewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
+    # '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200NewCT_91X_upgrade2023_realistic_v3_ext1-v1/MINIAODSIM',
+    # '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200NewCT_NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
+    # '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUCaloAging3000NewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
+    # '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUCaloAging300NewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
+    # '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUCaloAging4500UltimateNewCT_91X_upgrade2023_realistic_v3-v2/MINIAODSIM',
+    # '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUNewCT_91X_upgrade2023_realistic_v3_ext1-v1/MINIAODSIM',
+    # '/GJet_Pt-20toInf_DoubleEMEnriched_MGG-40to80_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-noPUNewCT_NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
     '/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200CaloAging3000NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
     '/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200CaloAging300NewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
     '/GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCUETP8M1_14TeV_Pythia8/PhaseIITDRSpring17MiniAOD-PU200CaloAging4500UltimateNewCT_91X_upgrade2023_realistic_v3-v1/MINIAODSIM',
@@ -145,23 +145,25 @@ pds = [
 ]
 
 # 5 aging * 3 pu = 15
-pds_relval = [
+pds_relvalHgg = [
     ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU200ExtEA4500Ult-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU200ExtEA4500Ult-v1/GEN-SIM-RECO'),
     ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU200ExtEA3000Ult-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU200ExtEA3000Ult-v1/GEN-SIM-RECO'),
     ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU200ExtEA3000-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU200ExtEA3000-v1/GEN-SIM-RECO'),
     ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU200ExtEA300-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU200ExtEA300-v1/GEN-SIM-RECO'),
     ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU200ExtEA1000-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU200ExtEA1000-v1/GEN-SIM-RECO'),
-    ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA4500Ult-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA4500Ult-v1/GEN-SIM-RECO'),
-    ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA3000Ult-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA3000Ult-v1/GEN-SIM-RECO'),
-    ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA3000-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA3000-v1/GEN-SIM-RECO'),
-    ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA300-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA300-v1/GEN-SIM-RECO'),
-    ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA1000-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA1000-v1/GEN-SIM-RECO'),
+    # ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA4500Ult-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA4500Ult-v1/GEN-SIM-RECO'),
+    # ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA3000Ult-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA3000Ult-v1/GEN-SIM-RECO'),
+    # ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA3000-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA3000-v1/GEN-SIM-RECO'),
+    # ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA300-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA300-v1/GEN-SIM-RECO'),
+    # ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA1000-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-PU25ns_91X_upgrade2023_realistic_v3_D17PU140ExtEA1000-v1/GEN-SIM-RECO'),
     ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-91X_upgrade2023_realistic_v3_D17noPUExtEA4500Ult-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-91X_upgrade2023_realistic_v3_D17noPUExtEA4500Ult-v1/GEN-SIM-RECO'),
     ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-91X_upgrade2023_realistic_v3_D17noPUExtEA3000Ult-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-91X_upgrade2023_realistic_v3_D17noPUExtEA3000Ult-v1/GEN-SIM-RECO'),
     ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-91X_upgrade2023_realistic_v3_D17noPUExtEA3000-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-91X_upgrade2023_realistic_v3_D17noPUExtEA3000-v1/GEN-SIM-RECO'),
     ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-91X_upgrade2023_realistic_v3_D17noPUExtEA300-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-91X_upgrade2023_realistic_v3_D17noPUExtEA300-v1/GEN-SIM-RECO'),
     ('/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-91X_upgrade2023_realistic_v3_D17noPUExtEA1000-v1/MINIAODSIM', '/RelValH125GGgluonfusion_14/CMSSW_9_1_2_patch1-91X_upgrade2023_realistic_v3_D17noPUExtEA1000-v1/GEN-SIM-RECO'),
 ]
+
+pds = pds_gjets + pds_relvalHgg
 
 if __name__ == '__main__':
     from CRABAPI.RawCommand import crabCommand
@@ -176,7 +178,7 @@ if __name__ == '__main__':
         except ClientException as cle:
             print "Failed submitting task: %s" % (cle)
 
-    for i, pd in enumerate(pds_relval):
+    for i, pd in enumerate(pds):
         if type(pd) is tuple:
             pd, second = pd
         else:
@@ -187,6 +189,8 @@ if __name__ == '__main__':
         config.Data.inputDataset = pd
         if second:
             config.Data.secondaryInputDataset = second
+            config.Data.useParent = False
         else:
+            config.Data.secondaryInputDataset = None
             config.Data.useParent = True
         submit(config)
